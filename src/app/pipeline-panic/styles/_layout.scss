@@ -1,0 +1,499 @@
+@use 'design-system' as *;
+
+// Host element must participate in flex layout to fill available space
+:host {
+  // Semantic status tokens.
+  //
+  // These are declared here rather than in the design system's :root block
+  // because emulated encapsulation rewrites a component stylesheet's :root into
+  // a selector that matches nothing, which left every var(--status-*) in this
+  // game resolving to an empty string. On the host they actually reach the tree.
+  --status-success: #16a34a;
+  --status-warning: #ca8a04;
+  --status-error: #dc2626;
+  --status-info: #2563eb;
+  --status-success-bg: rgba(22, 163, 74, 0.08);
+  --status-warning-bg: rgba(202, 138, 4, 0.08);
+  --status-error-bg: rgba(220, 38, 38, 0.08);
+  --status-info-bg: rgba(37, 99, 235, 0.08);
+
+  // How far the desk's supporting copy (kickers, docket labels, the patch-bay
+  // manifest) is pulled back from full ink. It is a token rather than a literal
+  // because the two themes cannot share one number: day ink is #2f4f4f on
+  // #fbf6e9 paper, which at 0.56 composites to 2.79:1 and fails WCAG AA for
+  // 11px text, while night is white on near-black and clears AA at the same
+  // value. 0.78 on day paper measures 4.64:1 and still reads a step below body
+  // copy. Covered by the contrast specs in pipeline-panic.component.spec.ts.
+  --desk-ink-quiet: 0.78;
+
+  display: flex;
+  flex-direction: column;
+  // Desktop: fit the panel to its own content instead of stretching to fill
+  // projects-detail's .main-box.demo-active { min-height: 82dvh } floor. That
+  // floor is a reasonable default for games whose content already exceeds it,
+  // but once the desk-view/patch-bay canvas is height-capped (see
+  // .canvas-wrapper in _canvas.scss), Pipeline Panic's real content is
+  // routinely shorter than 82dvh — flex: 1 forced this host element to fill
+  // the gap anyway, and every descendant in the chain (.pipeline-panic-wrapper,
+  // .game-area, .game-grid) is itself flex: 1 / a stretching grid row, so the
+  // gap surfaced as a solid-ink void below the patch bay's last content,
+  // above the site footer. flex-basis: auto (no flex-grow) sizes this host to
+  // its content instead; every flex: 1 further down the chain then resolves
+  // against an indefinite-height ancestor and also collapses to content size,
+  // no other rule needs to change. Restored to the old fill-the-floor
+  // behavior under $breakpoint-mobile below, where .game-grid's own
+  // overflow-y: auto (see prototype-workbench mobile rules) is the scroll
+  // container and needs a bounded outer height to have anything to scroll
+  // within.
+  flex: 0 1 auto;
+  width: 100%;
+  min-height: 0;
+  // CRITICAL: Host must clip overflow to prevent SPA from growing
+  overflow: hidden;
+  // Prevent text selection on game UI - improves game feel
+  user-select: none;
+  -webkit-user-select: none;
+
+  @media (max-width: $breakpoint-mobile) {
+    flex: 1;
+  }
+}
+
+// Token overrides only. The daylight values are tuned for a light panel and go
+// muddy on the night board, so lift them where the background is dark. Keep
+// layout declarations out of this block: it applies to the same element, so
+// anything that lands here silently disappears in day mode.
+:host-context(.night-mode) {
+  --status-success: #4ade80;
+  --status-warning: #facc15;
+  --status-error: #f87171;
+  --status-info: #60a5fa;
+  // White on the night board carries much further than slate on day paper, so
+  // the same visual "quiet" needs less ink here. 0.56 measures 5.87:1.
+  --desk-ink-quiet: 0.56;
+}
+
+// Pipeline Panic container - ensures proper SPA behavior without footer overlap
+// Using flex-based height management - fills available space naturally
+.pipeline-panic-wrapper {
+  position: relative;
+  width: 100%;
+  // Let flex fill available space instead of fixed calc
+  flex: 1;
+  min-height: 0; // Allow flex to shrink if needed
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: $font-system;
+  overflow: hidden;
+  // Keep the fixed desk-fault overlay inside this embed on WebKit/iOS. A
+  // transform creates the containing block in every engine.
+  transform: translateZ(0);
+  border-radius: $radius-large;
+  @include depth-border-standard;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: $breakpoint-mobile) {
+    border-radius: $radius-medium;
+  }
+}
+
+// ===== GAME AREA =====
+.game-area {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; // Allow flex children to shrink properly
+  overflow: hidden; // CRITICAL: Prevent children from pushing this container
+  // Contain layout to prevent internal changes from affecting parent. (The
+  // fixed-overlay containing block lives on .pipeline-panic-wrapper, the common
+  // ancestor of ALL overlays — several of which are siblings of .game-area.)
+  contain: layout;
+}
+
+.game-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $spacing-tight;
+  padding: $spacing-tight;
+  overflow: hidden;
+  min-height: 0; // Allow flex shrinking
+
+  // Tighter than the desktop padding: on a narrow phone every reclaimed
+  // pixel of column width matters more than it does at desktop scale, and
+  // the cards below (release-brief, dispatch-rail) already carry their own
+  // internal padding, so this outer inset doesn't need to match it.
+  @media (max-width: $breakpoint-mobile) {
+    padding: $spacing-micro; // 4px (was 8px)
+    gap: $spacing-tight; // 8px
+  }
+}
+
+// The Release Window opens as one focused ticket, not the campaign's full
+// workstation. The sidebars return only when the player explicitly opens the
+// patch bay.
+.game-grid.prototype-focus {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'canvas';
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  // .sidebar-left is not rendered here at all (it's inside an @if
+  // (prototypeWorkbenchOpen()) block that only matches .prototype-workbench),
+  // so no display: none is needed to hide it.
+
+  .canvas-main {
+    grid-area: canvas;
+    min-width: 0;
+  }
+
+  // On a phone .canvas-wrapper is display: none, so .canvas-main's content
+  // (ticket card + rail, no graph) is shorter than this stretched grid row —
+  // tried an align-self: start + game-grid flex-shrink fix here, but
+  // reverted it: :host's own `flex: 1` under $breakpoint-mobile (see the
+  // comment on :host above) deliberately keeps this whole chain
+  // (:host, .pipeline-panic-wrapper, .game-area, .game-grid) filling
+  // available height on mobile specifically so .game-grid's overflow-y:
+  // auto has a bounded outer height to scroll within — needed by OTHER
+  // mobile states (the patch bay's shelf, ticket 2's lever bank) that
+  // genuinely overflow. Shrinking .game-grid alone just relocated the freed
+  // space into .game-area (still unconditionally flex: 1 for the same
+  // reason), with zero visible change to the gap above the footer —
+  // confirmed via getBoundingClientRect before reverting. Actually closing
+  // that gap needs a state-aware height (fill only when the active state
+  // can overflow), which is a real change to a documented, load-bearing
+  // mechanism, not a spacing trim.
+}
+
+.game-grid.prototype-workbench {
+  // The shelf used to be a left column here ('nodes canvas'), which squeezed
+  // the canvas and left empty page space below it once the desk sizes to
+  // content (see the :host comment above — fit-content only frees vertical
+  // room if something downstream actually uses it). It now lives inside
+  // .canvas-main's own flow, between the canvas and the maintenance rail (see
+  // .sidebar-left below), so this is back to the same single 'canvas' area
+  // prototype-focus uses.
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, auto);
+  grid-template-areas: 'canvas';
+  // Safety net for the fit-content :host above (matches prototype-focus's own
+  // overflow-y: auto for the same reason): .canvas-main's natural height can
+  // come out taller than the auto grid row actually measured (confirmed via
+  // getBoundingClientRect vs scrollHeight — canvas-main's content ran past
+  // its own box). Scrolling here means a measurement gap costs a scrollbar,
+  // not a stamp deck silently clipped by the base .game-grid's overflow: hidden.
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  .canvas-main {
+    grid-area: canvas;
+    min-width: 0;
+    align-self: start;
+  }
+}
+
+// The parts tray: stage chips, the tools that edit them, and any refusal the
+// bay just issued. It hugs its own contents rather than claiming a column, so
+// a short tray leaves the canvas full width instead of squeezing it into a
+// left rail — it renders inline in .canvas-main's flow, between the canvas
+// and the maintenance rail (see pipeline-panic.component.html).
+//
+// At desktop widths this is also the shelf's ONE shared visual frame — the
+// border/background used to live separately on <app-node-palette>'s own
+// .nodes-panel and on <app-pipeline-toolbar>'s own .controls-bar, which read
+// as two disconnected boxes with the control cluster floating clear of the
+// chip tray's body (worse: at some widths past the shell's fixed .info-tab,
+// which sits vertically centered at the viewport's right edge). Framing here
+// instead, with each child's own frame reset to transparent (see
+// node-palette.component.scss / pipeline-toolbar.component.scss), makes the
+// chips and controls read as one panel with an internal divider. fit-content
+// width (not stretched to .canvas-main's full column) removes the dead space
+// between a 6-chip row and a fixed-width control column, and keeps the whole
+// shelf clear of the .info-tab's gutter without needing to know its exact
+// width — a full-width shelf was the only way to reach that gutter.
+.sidebar-left {
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  gap: $spacing-micro;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  app-node-palette {
+    display: flex;
+    flex: 0 1 auto;
+    min-width: 0;
+    // Floor of one header line plus ~2 chip rows, so the shelf never
+    // disappears entirely under the toolbar and refusal messages below it.
+    min-height: 9rem;
+    overflow: hidden;
+  }
+
+  app-pipeline-toolbar {
+    display: block;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  // Above mobile, lay the shelf out as a horizontal strip instead of a
+  // vertical stack: stage chips in a row, the tools that edit them grouped
+  // beside them. Below $breakpoint-mobile the column stack above stays in
+  // charge — its scroll model depends on each panel keeping a bounded height
+  // within the mobile game-grid override further down this file.
+  @media (min-width: $breakpoint-mobile) {
+    // Grid over flex-wrap: a wrapping flex row combined with width:
+    // fit-content had the browser sizing the container as if it should
+    // wrap, forcing app-pipeline-toolbar onto its own line below the chip
+    // tray even though both fit on one row with room to spare. Two explicit
+    // columns (chip tray, controls) plus a second row reserved for any
+    // refusal copy sidesteps that entirely.
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, auto);
+    grid-template-rows: auto auto;
+    align-items: stretch;
+    gap: 0;
+    // fit-content, not the tray's full column width — the frame now hugs its
+    // two children instead of stretching a border around empty space, and
+    // never reaches the shell's fixed .info-tab gutter at the viewport's
+    // right edge (see comment above).
+    width: fit-content;
+    max-width: 100%;
+    @include depth-border-standard;
+    border-radius: $radius-medium;
+    background: var(--text-area-color);
+    overflow: hidden;
+
+    app-node-palette {
+      grid-column: 1;
+      grid-row: 1;
+      // Content-sized up to a cap, not stretched — grid-template-columns:
+      // auto above already sizes the track to content, this just keeps a
+      // very long chip row from pushing the toolbar off-panel.
+      max-width: 28rem;
+      min-height: 7rem;
+      max-height: 16rem;
+    }
+
+    app-pipeline-toolbar {
+      grid-column: 2;
+      grid-row: 1;
+      width: 14rem;
+      // Hairline divider from the chip tray — same weight/color as the
+      // panel's own outer border, reading as one frame with two zones
+      // rather than two adjacent boxes.
+      border-left: 1px solid var(--border-color);
+    }
+
+    // At very wide viewports (owner repro ~1820px) the board and rail above
+    // and below stretch full width while this panel stays fit-content and
+    // sits flush left (align-self: flex-start on .sidebar-left, above) —
+    // reading as an orphaned island with a large dead void beside it. The
+    // panel's own sizing doesn't change (still fit-content, same two-column
+    // interior, zero dead space inside its own frame); only its position in
+    // the column shifts from flush-left to centered, matching the board and
+    // rail's own centered content (the route graph, the maintenance
+    // timeline) instead of hugging an edge neither of them hugs. Gated to a
+    // width comfortably past where the shelf's own natural width (~42rem)
+    // would already fill most of the column, so nothing changes below
+    // ~1500px viewport (the approved, unmodified layout there) — centering
+    // a panel that already spans nearly the full column is visually
+    // indistinguishable from left-aligning it.
+    @media (min-width: 100rem) {
+      align-self: center;
+    }
+
+    // Refusal copy always earns its own full-width line under the chips/tools
+    // row rather than squeezing into the wrap alongside them.
+    .placement-refused,
+    .run-blocked-reason {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+}
+
+// Visible reason for a refused patch-bay placement. The resources panel that
+// used to show CPU/memory budgets was deleted, so this is now the only place
+// a placement refusal is legible instead of a silent no-op. Shares one blocked
+// treatment with .stamp-blocked and .run-blocked-reason: hairline warning
+// border, desk-ink copy, no colored side rail.
+.placement-refused {
+  @include text-data;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: $spacing-tight;
+  font-size: $text-micro;
+  line-height: 1.4;
+  color: var(--text-color);
+  border: 1px solid var(--status-warning);
+}
+
+.game-error-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: $spacing-standard;
+  background: var(--bg-color);
+}
+
+.game-error-content {
+  width: min(100%, 30rem);
+  padding: $spacing-generous;
+  color: var(--text-color);
+  background: var(--text-area-color);
+  border: 2px solid var(--dramatic-border-color);
+  border-radius: $radius-medium;
+
+  h2 {
+    margin: $spacing-tight 0;
+  }
+
+  p {
+    line-height: 1.5;
+  }
+}
+
+.error-kicker {
+  @include text-data;
+  font-size: $text-micro;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.degraded-features-list {
+  padding-left: $spacing-comfortable;
+}
+
+.game-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-tight;
+  margin-top: $spacing-comfortable;
+
+  button {
+    min-height: $touch-target-min;
+    padding: $spacing-tight $spacing-standard;
+    font: inherit;
+    font-weight: $weight-bold;
+    color: var(--text-color);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+
+    &.primary {
+      color: var(--bg-color);
+      background: var(--text-color);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--dramatic-border-color);
+      outline-offset: 2px;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-mobile) {
+  .game-grid.prototype-focus {
+    display: block;
+
+    .canvas-main {
+      min-height: max-content;
+    }
+  }
+
+  // The focused ticket is deliberately one screen tall. Opening the patch bay
+  // opts into the full workstation, whose canvas, rail, tools and stage shelf
+  // cannot honestly fit in that same fixed track. Make the grid itself the
+  // scroll container so every expert control remains reachable without letting
+  // the surrounding project page grow underneath the persistent footer.
+  //
+  // The shelf is now rendered inside .canvas-main's own flow rather than as a
+  // sibling 'nodes' grid column/row (see the non-mobile .sidebar-left rule
+  // above), so this stays the same single 'canvas' area as the base rule —
+  // only the fixed heights below are mobile-specific.
+  .game-grid.prototype-workbench {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    .canvas-main {
+      flex: none;
+      min-height: auto;
+    }
+
+    .canvas-wrapper {
+      flex: none;
+      height: 15rem;
+    }
+
+    // Column stack, not the horizontal strip above: at this width the shelf's
+    // node palette is its own horizontally-scrolling chip row (see
+    // node-palette.component.scss), so it and the toolbar need to be stacked
+    // full-width rather than sharing a row with each other.
+    .sidebar-left {
+      width: 100%;
+      flex-direction: column;
+    }
+  }
+}
+
+// =============================================================================
+// Small Screen Polish (768px / 48rem)
+// Extra-tight spacing for narrow windows and small tablets
+// =============================================================================
+@media (max-width: $breakpoint-small) {
+  .game-grid {
+    gap: $spacing-micro;
+    padding: $spacing-micro;
+  }
+
+  .game-header-compact {
+    padding: $spacing-micro;
+    gap: $spacing-micro;
+  }
+
+  // Reduce canvas minimum so more room for panels
+  .canvas-main {
+    min-height: 160px;
+  }
+
+  .canvas-wrapper {
+    min-height: 120px;
+  }
+}
+
+// =============================================================================
+// Screen Reader Only (visually hidden but accessible to assistive tech)
+// =============================================================================
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// =============================================================================
+// Reduced Motion Accessibility
+// Disables animations for users who prefer reduced motion
+// =============================================================================
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

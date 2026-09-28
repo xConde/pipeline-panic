@@ -1,0 +1,11 @@
+@use 'styles/layout';
+@use 'styles/toolbar';
+@use 'styles/canvas';
+
+// Explicit dependency hub for the workstation, release desk, and responsive partials.
+//
+// No ::selection rule here on purpose: styles/_layout.scss:36-38 sets
+// `:host { user-select: none; }` sitewide across this project ("Prevent text
+// selection on game UI - improves game feel"), so text selection is
+// unreachable in the live app. See the shell's styles.scss for the sitewide
+// note on this exclusion.

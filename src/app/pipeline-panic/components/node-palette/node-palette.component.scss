@@ -1,0 +1,569 @@
+@use '../../styles/design-system' as *;
+
+// Shared panel styles (copied for encapsulation)
+.panel {
+  @include panel-base;
+  display: flex;
+  flex-direction: column;
+
+  .panel-title {
+    padding: $spacing-standard;
+    font-size: $text-small;
+    font-weight: $weight-bold;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--text-area-color);
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-bottom: 0.0625rem solid var(--border-color);
+    background: rgba(255, 255, 255, 0.02);
+
+    .panel-title {
+      padding: 0;
+      border: none;
+      background: none;
+      margin: 0;
+    }
+  }
+}
+
+// Parts tray. The shelf hugs its own contents instead of claiming a full
+// column: a stage rack you reach into, not a dashboard panel. It fills the
+// tray's width; the vertical hug comes from the host's flex in _layout.scss.
+.nodes-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+
+  @media (max-width: $breakpoint-mobile) {
+    width: 100%;
+    min-height: 80px;
+    @include panel-base;
+  }
+
+  // Above mobile the shelf's border/background live one level up, on
+  // .sidebar-left (see _layout.scss) — one frame around the chip tray and
+  // the toolbar together instead of each drawing its own box. .panel's
+  // border-radius/overflow:hidden stay (needed so the chip grid's own
+  // corners don't square off against the shared frame's rounded ones).
+  @media (min-width: $breakpoint-mobile) {
+    border: none;
+    background: transparent;
+  }
+
+  // This whole component only exists in the DOM while the bay is open (see
+  // the @if in pipeline-panic.component.html), so there is no "bay closed"
+  // case to preserve a roomier version for — padding is tight unconditionally.
+  .patch-palette-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: $spacing-micro $spacing-tight;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tray-title {
+    @include text-data;
+    margin: 0;
+    font-size: $text-micro;
+    font-weight: $weight-bold;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-color);
+  }
+
+  .patch-palette-copy {
+    margin: 0;
+    font-size: $text-micro;
+    line-height: 1.3;
+    opacity: var(--desk-ink-quiet);
+  }
+
+  // Stage chips in a row (SRC/BLD/TST/SEC/DPY/PAR): the same compact chip
+  // recipe the touch layout always used, now the default at every width
+  // since the shelf itself is a horizontal strip rather than a vertical
+  // column above $breakpoint-mobile (see .sidebar-left in _layout.scss). At
+  // $breakpoint-mobile and below the row still holds, but scrolls instead of
+  // wrapping — narrower than that, wrapped rows would eat the vertical space
+  // the mobile game-grid's bounded panel heights depend on.
+  .node-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: $spacing-tight;
+    padding: $spacing-tight;
+    overflow-y: auto;
+
+    @media (max-width: $breakpoint-mobile) {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-padding: $spacing-tight;
+    }
+
+    .node-item {
+      width: auto;
+      min-width: 60px;
+      max-width: 80px;
+      flex: 0 0 auto;
+      font: inherit;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-micro;
+      min-height: $touch-target-min;
+      padding: $spacing-tight $spacing-micro;
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: $radius-base;
+      cursor: grab;
+      transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1);
+
+      &:hover:not(:disabled) {
+        border-color: var(--dramatic-border-color);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--dramatic-border-color);
+        outline-offset: 2px;
+      }
+
+      &:active {
+        cursor: grabbing;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      &.selected-for-placement {
+        border-color: var(--dramatic-border-color);
+        background: var(--text-area-color);
+        outline: 2px solid var(--dramatic-border-color);
+        outline-offset: 1px;
+      }
+
+      .node-icon {
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: $radius-small;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        font-weight: $weight-bold;
+        font-size: $text-small;
+        font-family: $font-mono;
+        letter-spacing: -0.02em;
+        flex-shrink: 0;
+      }
+
+      .node-label {
+        font-size: $text-micro;
+        font-weight: $weight-semibold;
+        text-align: center;
+        color: var(--text-color);
+        line-height: 1.25;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+
+        @media (max-width: 360px) {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+// Mobile backdrop for node detail
+.node-detail-backdrop {
+  display: none;
+
+  @media (max-width: $breakpoint-mobile) {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 49;
+  }
+}
+
+// Node detail panel
+.node-detail-panel {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  max-height: 100%;
+
+  @media (max-width: $breakpoint-mobile) {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    z-index: 50;
+    background: var(--text-area-color);
+    @include depth-border-strong;
+    border-radius: $radius-large;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  @media (min-width: $breakpoint-mobile) and (max-width: $breakpoint-tablet) {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: var(--text-area-color);
+    border-bottom: 0.125rem solid var(--border-color);
+    flex-shrink: 0;
+
+    @media (max-width: $breakpoint-mobile) {
+      padding: $spacing-micro $spacing-tight;
+    }
+
+    .panel-title {
+      padding: 0;
+      border: none;
+      background: none;
+      margin: 0;
+      font-size: 0.875rem;
+
+      @media (max-width: $breakpoint-mobile) {
+        font-size: $text-small;
+      }
+    }
+
+    .close-btn {
+      width: 1.5rem;
+      height: 1.5rem;
+      // WCAG 2.5.5 — the glyph is 24px but the tap target must be >=44px. The
+      // node-detail panel is a centered fixed modal on mobile; this is its only
+      // dismiss control. (Matches the close-panel-btn in _panels.scss.)
+      min-width: $touch-target-min;
+      min-height: $touch-target-min;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 0.0625rem solid var(--border-color);
+      border-radius: 0.25rem;
+      color: var(--text-color);
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--border-color);
+        transform: scale(1.05);
+      }
+    }
+  }
+
+  .detail-content {
+    padding: 0.375rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+
+    @media (max-width: $breakpoint-mobile) {
+      padding: $spacing-comfortable;
+      gap: $spacing-standard;
+    }
+  }
+
+  .detail-section {
+    h4 {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-color);
+      margin-bottom: 0.375rem;
+
+      @media (max-width: $breakpoint-mobile) {
+        font-size: $text-micro;
+        margin-bottom: $spacing-micro;
+      }
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.25rem 0;
+      font-size: 0.75rem;
+      border-bottom: 0.0625rem solid rgba(0, 0, 0, 0.05);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .value {
+        font-weight: 600;
+        color: var(--text-color);
+      }
+    }
+
+    .config-select {
+      width: 100%;
+      // Right padding clears the custom chevron (10px glyph, positioned at
+      // $spacing-tight from the edge below) so the closed-state value text
+      // never runs under it.
+      padding: $spacing-tight $spacing-major $spacing-tight $spacing-tight;
+      font-size: $text-small;
+      font-weight: $weight-medium;
+      border: 1px solid var(--border-color);
+      border-radius: $radius-base;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      cursor: pointer;
+      margin-bottom: $spacing-micro;
+      transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+
+      // Drop the OS-drawn arrow so the closed state matches the desk's
+      // borders-only, sharp-edged terminal aesthetic instead of the platform
+      // default. The open option list stays fully native (platform ceiling).
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+
+      // Custom chevron, inline SVG data-URI. Two ink colors (below, gated on
+      // :host-context(.night-mode)) because a chevron drawn in one theme's ink
+      // disappears against the other theme's background — same split the
+      // --status-*/--border-color tokens already use in _layout.scss.
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(47,79,79,0.65)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right $spacing-tight center;
+      background-size: 10px 10px;
+
+      :host-context(.night-mode) & {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.75)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      }
+
+      &:hover:not(:disabled) {
+        border-color: var(--dramatic-border-color);
+        background-color: var(--text-area-color);
+      }
+
+      &:focus {
+        outline: 2px solid var(--dramatic-border-color);
+        outline-offset: 2px;
+        border-color: var(--dramatic-border-color);
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      option {
+        padding: $spacing-micro;
+      }
+    }
+
+    .config-hint {
+      font-size: $text-micro;
+      color: var(--text-color);
+      opacity: 0.6;
+      margin: $spacing-micro 0 0 0;
+      line-height: 1.4;
+      font-style: italic;
+    }
+
+    .config-toggle {
+      display: flex;
+      align-items: center;
+      gap: $spacing-tight;
+      cursor: pointer;
+      padding: $spacing-tight 0;
+
+      input[type='checkbox'] {
+        width: 1rem;
+        height: 1rem;
+        accent-color: var(--dramatic-border-color);
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+      }
+
+      .toggle-label {
+        font-size: $text-small;
+        font-weight: $weight-medium;
+        color: var(--text-color);
+      }
+    }
+  }
+
+  .detail-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $radius-medium;
+    color: #ffffff;
+    font-size: $text-base;
+    font-weight: $weight-bold;
+    margin: 0 auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: $font-mono;
+    letter-spacing: 0.02em;
+
+    @media (max-width: $breakpoint-mobile) {
+      width: 3rem;
+      height: 3rem;
+      font-size: $text-base;
+    }
+  }
+
+  .status-badge {
+    display: block;
+    width: 100%;
+    padding: $spacing-tight $spacing-standard;
+    border-radius: $radius-base;
+    font-size: $text-small;
+    font-weight: 500;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    @include depth-border-standard;
+    transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+
+    @media (max-width: $breakpoint-mobile) {
+      padding: $spacing-standard $spacing-comfortable;
+      font-size: $text-small;
+    }
+
+    &.status-idle {
+      background: var(--text-area-color);
+      color: var(--text-color-muted);
+      border-color: var(--border-color);
+    }
+    &.status-running {
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--status-info);
+      border-color: rgba(37, 99, 235, 0.2);
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    &.status-success {
+      background: var(--status-success-bg);
+      color: var(--status-success);
+      border-color: rgba(22, 163, 74, 0.15);
+    }
+    &.status-failed {
+      background: var(--status-error-bg);
+      color: var(--status-error);
+      border-color: rgba(220, 38, 38, 0.15);
+    }
+    // P2: RolledBack — orange-500. Deploy failed but run recovered; NOT a success.
+    &.status-rolled-back {
+      background: rgba(249, 115, 22, 0.08);
+      color: #f97316;
+      border-color: rgba(249, 115, 22, 0.2);
+    }
+    &.status-cancelled,
+    &.status-skipped {
+      background: var(--text-area-color);
+      color: var(--text-color-muted);
+      border-color: var(--border-color);
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  .detail-actions {
+    margin-top: $spacing-tight;
+
+    .detail-btn {
+      width: 100%;
+      padding: $spacing-standard;
+      font-size: $text-small;
+      font-weight: $weight-medium;
+      @include depth-border-standard;
+      border-radius: $radius-base;
+      background: var(--text-area-color);
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-tight;
+
+      .btn-icon {
+        font-size: $text-medium;
+        line-height: 1;
+        opacity: 0.8;
+        display: inline-flex;
+        align-items: center;
+
+        svg {
+          vertical-align: middle;
+        }
+      }
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        background: var(--bg-color);
+        border-color: var(--dramatic-border-color);
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      &.danger {
+        background: var(--text-area-color);
+        border-color: var(--border-color);
+        color: var(--status-error);
+
+        &:hover:not(:disabled) {
+          background: var(--status-error-bg);
+          border-color: var(--status-error);
+        }
+      }
+    }
+  }
+}

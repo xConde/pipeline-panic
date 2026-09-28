@@ -1,0 +1,137 @@
+@use '../../styles/design-system' as *;
+
+// The patch tools live in the parts tray, docked under the stage chips, so the
+// hand that picks a stage is already on the tools that edit it. Two columns of
+// small controls read as a tool rail; a full-width row of mostly-disabled
+// buttons under the canvas read as a dashboard.
+.controls-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-micro;
+  padding: $spacing-tight;
+  background: var(--text-area-color);
+  @include depth-border-standard;
+  border-radius: $radius-base;
+  position: relative;
+  z-index: 1;
+
+  // Above mobile this sits inside .sidebar-left's own shared frame (see
+  // _layout.scss) instead of drawing its own border/box next to the chip
+  // tray's — the divider between them is .sidebar-left's border-left on
+  // app-pipeline-toolbar, not a second nested border here.
+  @media (min-width: $breakpoint-mobile) {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+
+  @media (max-width: $breakpoint-mobile) {
+    display: flex;
+    padding: $spacing-tight;
+    gap: $spacing-micro;
+    flex-wrap: nowrap;
+    // overflow-x:auto is a safety net for very narrow phones.
+    overflow-x: auto;
+    justify-content: space-between;
+  }
+
+  .ctrl-btn {
+    min-width: 0;
+    min-height: 2rem;
+    padding: $spacing-micro $spacing-tight;
+    font-size: $text-micro;
+    font-weight: $weight-medium;
+    border: 0.0625rem solid var(--border-color);
+    border-radius: $radius-base;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-micro;
+    white-space: nowrap;
+
+    svg {
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: $breakpoint-mobile) {
+      flex: 0 0 auto;
+      width: $touch-target-min;
+      height: $touch-target-min;
+      padding: 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+    }
+
+    .btn-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      @media (max-width: $breakpoint-mobile) {
+        display: none;
+      }
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--dramatic-border-color);
+    }
+
+    &:focus-visible {
+      outline: 0.125rem solid var(--dramatic-border-color);
+      outline-offset: 0.125rem;
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    // Restore is the one tool that is live whenever the bay is, and its label is
+    // the longest. Give it the full tray width instead of truncating it.
+    &.restore-btn {
+      grid-column: 1 / -1;
+    }
+
+    // Touch-only Connect toggle — hidden on desktop, visible on touch viewports.
+    &.connect-btn {
+      // Hide on desktop where Shift+Click is available.
+      display: none;
+
+      @media (max-width: $breakpoint-mobile) {
+        display: flex;
+        // Fixed width on mobile to match other ctrl-btns.
+        flex: 0 0 auto;
+        width: auto;
+        min-width: $touch-target-min;
+        padding: 0 $spacing-tight;
+        gap: $spacing-micro;
+
+        // Show the arrow icon; hide the text label (same pattern as other btns).
+        .btn-text {
+          display: none;
+        }
+        .connect-icon {
+          display: inline;
+          font-size: 1.25rem;
+          line-height: 1;
+        }
+      }
+
+      &.active {
+        border-color: var(--status-info);
+        color: var(--status-info);
+        background: var(--status-info-bg);
+      }
+    }
+  }
+}

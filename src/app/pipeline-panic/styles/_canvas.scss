@@ -1,0 +1,1701 @@
+@use 'design-system' as *;
+
+// Canvas Main
+.canvas-main {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-tight; // 8px
+  min-height: 0; // Allow flex shrinking
+  flex: 1; // Take available space
+
+  @media (max-width: $breakpoint-mobile) {
+    grid-area: canvas; // Assign to grid area
+    gap: $spacing-micro; // 4px
+    min-height: 200px; // Ensure minimum height
+    min-width: 0; // don't force the grid column wider than the viewport
+  }
+}
+
+// ── Release ticket briefing ────────────────────────────────────────────────
+// Paperwork, not a generic hero card: a terse operator brief that establishes
+// one question before the canvas exposes any editing machinery.
+.release-brief {
+  display: grid;
+  grid-template-columns: minmax(17rem, 1.4fr) minmax(16rem, 1fr) minmax(11rem, 0.65fr) auto;
+  align-items: center;
+  gap: $spacing-standard $spacing-generous;
+  padding: $spacing-standard $spacing-comfortable;
+  color: var(--text-color);
+  background: var(--text-area-color);
+  border: 1px solid var(--border-color);
+  clip-path: polygon(0 0, calc(100% - 0.75rem) 0, 100% 0.75rem, 100% 100%, 0 100%);
+}
+
+.brief-copy {
+  min-width: 0;
+
+  h2 {
+    margin: 2px 0 $spacing-micro;
+    font-size: clamp($text-large, 1.7vw, $text-xlarge);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+  }
+
+  p {
+    max-width: 44rem;
+    margin: 0;
+    font-size: $text-small;
+    line-height: 1.45;
+    opacity: 0.76;
+  }
+}
+
+// Labels are structure, not status. The desk keeps color for things that mean
+// something (the gate, a stamp, an earned feat, a stage's ink on the rail), so
+// the paperwork's eyebrows are set in quiet desk ink.
+.brief-kicker,
+.route-docket-label,
+.feat-docket > span {
+  @include text-data;
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-color);
+  opacity: var(--desk-ink-quiet);
+}
+
+.route-docket {
+  @include text-data;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-left: $spacing-standard;
+  border-left: 1px dashed var(--border-color);
+
+  strong {
+    font-size: $text-base;
+  }
+
+  > span:last-child {
+    max-width: 24rem;
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.62;
+  }
+}
+
+.feat-docket {
+  @include text-data;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: $spacing-tight;
+  border-block: 1px dashed var(--border-color);
+
+  > span {
+    color: var(--status-warning);
+  }
+
+  strong {
+    font-size: $text-small;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  small {
+    font-size: 10px;
+    line-height: 1.25;
+    opacity: 0.62;
+  }
+
+  &.is-earned {
+    color: var(--status-success);
+    border-color: currentColor;
+  }
+}
+
+.patch-bay-toggle {
+  @include text-data;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-standard;
+  min-height: $touch-target-min;
+  padding: $spacing-tight $spacing-standard;
+  color: var(--text-color);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: currentColor;
+  }
+}
+
+// The desktop ticket has four deliberate columns. Tighten their minimums
+// before the layout reaches tablet width so the patch-bay action never leaks
+// past the desk edge (1024px was the exact failure point in browser testing).
+@media (max-width: $breakpoint-desktop) and (min-width: $breakpoint-mobile) {
+  .release-brief {
+    grid-template-columns: minmax(13rem, 1.2fr) minmax(13rem, 1fr) minmax(9rem, 0.7fr) auto;
+    gap: $spacing-tight $spacing-standard;
+    padding-inline: $spacing-standard;
+  }
+
+  .route-docket {
+    padding-left: $spacing-tight;
+  }
+}
+
+// One line of desk vocabulary, on the same dashed rules the dockets use. The
+// bay used to open with two competing statements inside a colored banner; the
+// rail underneath is the actual evidence, so the banner stopped competing.
+.patch-bay-manifest {
+  @include text-data;
+  margin: 0;
+  padding: $spacing-micro 0;
+  font-size: $text-micro;
+  opacity: var(--desk-ink-quiet);
+  border-block: 1px dashed var(--border-color);
+
+  span {
+    margin-right: $spacing-tight;
+    font-weight: $weight-bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
+// Shares the tray's blocked treatment with .placement-refused: hairline warning
+// border, desk-ink copy. One vocabulary for "the bay will not do that yet".
+.run-blocked-reason {
+  @include text-data;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: $spacing-tight;
+  color: var(--text-color);
+  font-size: $text-micro;
+  line-height: 1.4;
+  border: 1px solid var(--status-warning);
+}
+
+.canvas-wrapper {
+  // Sized directly (see the two rules below) rather than via flex-grow: the
+  // panel host is fit-content on desktop (see :host in _layout.scss), so
+  // there is no longer a forced-tall ancestor for flex: 1 to consume as
+  // "leftover space" — a flex-basis: 0 child inside an intrinsically-sized
+  // flex column just collapses toward zero instead. flex-shrink: 0 keeps the
+  // sized box from being crushed if the column runs short on room; the desk
+  // scrolls instead (see the prototype-focus rule below).
+  flex: 0 0 auto;
+  position: relative;
+  background: var(--text-area-color);
+  @include depth-border-strong;
+  border-radius: $radius-base;
+  overflow: hidden;
+
+  // On the focused desk the route preview must stay a readable object even
+  // when the ticket's brief, rail and levers stack tall (ticket 2 at mid
+  // widths). flex-shrink: 0 above means the desk scrolls instead of crushing
+  // the route; the phone layout hides the preview entirely and is unaffected.
+  //
+  // A flex: 1 here used to eat every pixel of leftover column height — at a
+  // tall desktop viewport it grew past 500px while the route itself is one
+  // row of nodes centered at 48% of the box (see routePositions() in
+  // release-window-routes.ts, which only ever spreads the release-desk route
+  // across a single band regardless of box height). The gap between "one
+  // thin row" and "the whole flex remainder" read as acres of dead grid
+  // above and below the nodes. Scale with viewport height so short windows
+  // still get a workable canvas, but stop well short of the panel's floor —
+  // handleCanvasResize() rescales node positions proportionally on every
+  // wrapper resize (confirmed in pipeline-panic.component.ts), so this does
+  // not disturb click-position math. Re-check this ceiling if a future
+  // ticket adds a multi-row route: today only the release-desk single level
+  // exists (game-engine.service.ts loadLevels()) and its layout never
+  // exceeds one row outside the <620px compact branch.
+  //
+  // Scoped to $breakpoint-mobile and up: below it, the plain .canvas-wrapper
+  // mobile rule further down sets height: 100% (of a fully block-flow,
+  // content-sized .canvas-main — see the prototype-focus mobile override in
+  // _layout.scss) and must stay in charge there, so this more-specific
+  // selector is not allowed to fire and clobber it at phone widths.
+  //
+  // The middle clamp term used to be a blind 40vh, sized with no idea how
+  // tall the chrome stacked above and below it actually is — on a short
+  // desktop viewport the two can add up to more than 100dvh, and something
+  // has to give: the SHIPS/LOCKS stamp deck at the bottom of the maintenance
+  // rail, clipped under the site footer with only .game-grid.prototype-
+  // focus's overflow-y: auto (see above) to fall back on. calc(100dvh - Xrem)
+  // instead reserves the real remaining space, where X is every other fixed
+  // (non-canvas) box in the vertical stack — but that budget is NOT one
+  // constant across all heights, because two things above and below it are
+  // themselves responsive to viewport height, not just width:
+  //   1. The existing "short window" rule below (`@media (max-height: 50rem)`)
+  //      tightens .release-brief/.dispatch-rail/.stamp padding under 800px —
+  //      real chrome is smaller there.
+  //   2. <app-footer>'s own font-size is `clamp(18px, 0.4vh + 0.8vw, 22px)`
+  //      (see footer.component.scss), so the footer itself grows a few px
+  //      taller as the viewport grows, independent of this rule.
+  // A single X measured at one height does not hold at another: measured
+  // live via getBoundingClientRect at 1440 width, both themes, real Chromium
+  // (Cypress/Electron, not just one browser build — cross-engine text reflow
+  // shifted these by a wrapped line in earlier measurement, so this was
+  // re-verified against a second, independent renderer) —
+  //   height <= 800px (matches the max-height: 50rem rule below):
+  //     .game-header-compact                      ~3.8rem (61px)
+  //     flex/padding gap above the release brief    0.5rem (8px)
+  //     .release-brief (compact padding)            6.8rem (109px)
+  //     flex gaps around canvas-wrapper              1.0rem (16px)
+  //     .dispatch-rail (compact; rail head/track/
+  //       read + .stamp-deck, no levers)            10.7rem (171px)
+  //     gap .dispatch-rail -> <app-footer>           0.4rem (6px)
+  //     <app-footer> (774px viewport)                4.8rem (77px)
+  //   = 28rem measured -> 29rem budgeted (X_COMPACT below).
+  //   height > 800px (roomy padding restored):
+  //     .game-header-compact                      ~3.8rem (61px)
+  //     flex/padding gap above the release brief    0.5rem (8px)
+  //     .release-brief (roomy padding)               7.4rem (118px)
+  //     flex gaps around canvas-wrapper               1.0rem (16px)
+  //     .dispatch-rail (roomy; same parts, more
+  //       padding)                                  14.3rem (228px)
+  //     gap .dispatch-rail -> <app-footer>            0.4rem (6px)
+  //     <app-footer> (900px viewport, near its vh-
+  //       clamp ceiling)                             5.6rem (90px)
+  //   = 33rem measured -> 35rem budgeted for extra cross-browser/font slack
+  //     (X_ROOMY below; the >800px tier has no other height-scoped rule to
+  //     lean on, so it carries more of its own margin).
+  // Both budgets cover every state that can show the stamp deck EXCEPT
+  // ticket 2's active-condition .lever-bank, which adds ~7rem more than
+  // either allows for — .game-grid.prototype-focus's overflow-y: auto still
+  // catches that case with a scrollbar rather than a clip, so it stays a
+  // known, accepted gap rather than inflating this budget and starving the
+  // common (no-lever) case. Re-measure both tiers if the header, brief,
+  // rail or footer chrome changes height, or if the 50rem split moves.
+  //
+  // The MAX term (third clamp() argument) is a separate concern from the
+  // budgets above: it only ever binds at TALL viewports, where calc(100dvh -
+  // X) grows past a sane canvas size, not at the 774-900px fold heights
+  // above (there, calc() resolves well under 14rem and the MIN term wins —
+  // changing MAX has zero effect on any of those measurements). It used to
+  // be a flat 28rem, which meant a 1280px-tall viewport left ~317px of dead
+  // space between the stamp deck and the footer once the canvas hit that
+  // ceiling — the route graph stopped growing long before the viewport did.
+  // Raised to 45rem (720px), the exact ceiling of routePositions()'s own
+  // clamp (release-window-routes.ts): it computes each node's y as a
+  // fraction of the canvas's real measured height (`centerY = height *
+  // 0.48`), but clamps that height input to 720px. handleCanvasResize()
+  // proportionally rescales existing node positions on every resize
+  // independent of that clamp, so a taller canvas always displays centered
+  // — but the INITIAL deal position, computed once via
+  // installReleaseRoutePlan() using the live box height, is only pixel-
+  // exact (not merely close) when the box is at or under 720px. 45rem is
+  // the tallest value that guarantees that, not an approximation of it.
+  // Verified live via Cypress at 1440x1280 (getBoundingClientRect): canvas
+  // grows to its new 720px ceiling, gap between the stamp deck and the
+  // footer drops from 317px to well under the ~40px target, node row still
+  // centers correctly.
+  @media (min-width: $breakpoint-mobile) {
+    .game-grid.prototype-focus & {
+      height: clamp(14rem, calc(100dvh - 35rem), 45rem); // X_ROOMY (>800px)
+    }
+  }
+
+  @media (min-width: $breakpoint-mobile) and (max-height: 50rem) {
+    .game-grid.prototype-focus & {
+      height: clamp(14rem, calc(100dvh - 29rem), 45rem); // X_COMPACT (<=800px)
+    }
+  }
+
+  // In the bay the route is a thing you edit, so it has to sit close to the
+  // rail that answers for it. Nodes are laid out proportionally and
+  // handleCanvasResize() rescales them on every wrapper resize, so a shorter
+  // frame refits the route rather than clipping it; the 14rem floor stays
+  // well clear of the 220px floor that would send the layout back to its
+  // pre-view fallback coordinates.
+  //
+  // Same two-tier shape as the prototype-focus rules above, mirroring the
+  // existing "short window" 800px split, but with its own X: bay-open chrome
+  // is taller than drafting/verdict chrome by the shelf and manifest's own
+  // height. Re-measured live via getBoundingClientRect at 1440 width, bay
+  // open, ticket 1 drafting (no verdict receipt) — this is the SECOND
+  // measurement of this budget; the first (42rem/47rem) was taken before the
+  // bay's dense chrome applied at every height (see "Bay-Open Zero-Overflow
+  // Closure" in STRATEGIC_AUDIT.md), so it over-reserved by roughly the
+  // density savings once that landed — at a tall viewport the calc() term
+  // capped the canvas well below both the available space and the 45rem
+  // ceiling, visibly collapsing the board when the bay opened —
+  //   height <= 800px: game header 53 + release brief 85 + patch-bay-
+  //     manifest 13 + shelf 138 + dispatch-rail (drafting) 163 + footer 77
+  //     + internal gaps/padding ~24 = 553px measured -> 37rem (592px)
+  //     budgeted (only matters for keeping the 14rem floor engaged
+  //     throughout <=800px, which 34-37rem both already guarantee; the
+  //     compact tier's canvas is floored at every height in its own range
+  //     regardless of the exact X chosen above that threshold).
+  //   height > 800px (footer's own height saturates by 1280px, so that's
+  //     the representative measurement, not 900px): header 53 + release
+  //     brief 91 + manifest 13 + shelf 138 + dispatch-rail 163 + footer 112
+  //     + internal gaps/padding ~26 = 596px measured -> 38rem (608px)
+  //     budgeted.
+  // Both budgets cover every state that can show the stamp deck, same
+  // exception as the prototype-focus budgets above (ticket 2's active-
+  // condition .lever-bank stays on the overflow-y: auto safety net).
+  //
+  // Scoped to $breakpoint-mobile and up for the same reason as the
+  // prototype-focus rule above: _layout.scss's mobile prototype-workbench
+  // override sets its own fixed height: 15rem, and both rules share the same
+  // 3-class specificity, so an unconditional rule here (later in the
+  // cascade, since this partial is @used after layout) would otherwise win
+  // at phone widths and silently replace that mobile height.
+  //
+  // The MAX term, like the prototype-focus rule above, only binds at tall
+  // viewports and does not affect the 774-900px fold measurements. Same
+  // 45rem ceiling as the closed desk (the routePositions() 720px
+  // node-centering constraint applies identically to this canvas). Verified
+  // live at 1440x1280: bay-open drafting canvas grew from 528px (stale
+  // budget, calc()-bound well under the ceiling) to 672px (fresh budget,
+  // still calc()-bound but now close to the ceiling instead of far under
+  // it) — see STRATEGIC_AUDIT.md for the full before/after delta and the
+  // open/close collapse measurement.
+  @media (min-width: $breakpoint-mobile) {
+    .game-grid.prototype-workbench & {
+      height: clamp(14rem, calc(100dvh - 38rem), 45rem); // X_BAY_ROOMY (>800px)
+    }
+  }
+
+  @media (min-width: $breakpoint-mobile) and (max-height: 50rem) {
+    .game-grid.prototype-workbench & {
+      height: clamp(14rem, calc(100dvh - 37rem), 45rem); // X_BAY_COMPACT (<=800px)
+    }
+  }
+
+  // Mobile: Ensure canvas wrapper fills its container
+  @media (max-width: $breakpoint-mobile) {
+    width: 100%;
+    height: 100%;
+    min-height: 150px; // Minimum viable height
+    // Remove fixed heights - let flex handle it
+  }
+
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    // Better rendering for canvas
+    image-rendering: auto; // Let browser optimize
+  }
+
+  .game-canvas {
+    z-index: 1;
+  }
+  .pipeline-canvas {
+    z-index: 2;
+    cursor: crosshair;
+    // Prevent browser gestures (pinch-zoom, pan) on the interactive canvas.
+    // This ensures touch events are handled by our JS handlers instead.
+    touch-action: none;
+
+    // The main interactive surface (tabindex=0 while the patch bay is open)
+    // needs the same ring as every other control. Inset (negative offset)
+    // because the canvas fills .canvas-wrapper edge-to-edge and the wrapper
+    // clips overflow — an outward ring would be cut off at the wrapper's border.
+    &:focus-visible {
+      outline: 2px solid var(--dramatic-border-color);
+      outline-offset: -2px;
+    }
+  }
+  .particle-canvas {
+    z-index: 3;
+    pointer-events: none;
+  }
+}
+
+.prototype-canvas-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: $spacing-tight;
+  cursor: default;
+
+  span {
+    @include text-data;
+    padding: 2px $spacing-tight;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--status-success);
+    background: color-mix(in srgb, var(--text-area-color) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--status-success) 55%, var(--border-color));
+  }
+}
+
+// ── Maintenance window rail ─────────────────────────────────────────────────
+// The release desk's own instrument. Time runs left to right, every stage is as
+// wide as it is long, and the window ends in a gate that physically shuts.
+// Built from the existing 4px grid, mono type and node colors on purpose: this
+// is another view of the same pipeline, not a second design language.
+
+.dispatch-rail {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-tight;
+  padding: $spacing-standard $spacing-major $spacing-standard $spacing-standard;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-base;
+  background: var(--text-area-color);
+  color: var(--text-color);
+
+  // The extra right padding gives the rail-head condition badge and the
+  // rail-track's right edge some breathing room at desktop widths, where
+  // .release-brief sits beside it with matching side margins. On a phone
+  // there's no neighbor to balance against, and the mismatch reads as the
+  // receipt card being narrower than the ticket card above it for no
+  // reason — even, tighter padding on both sides here.
+  @media (max-width: $breakpoint-mobile) {
+    padding-right: $spacing-standard;
+  }
+}
+
+.rail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $spacing-tight;
+
+  > div {
+    display: flex;
+    align-items: baseline;
+    gap: $spacing-tight;
+  }
+
+  span,
+  h3 {
+    margin: 0;
+    @include text-data;
+    font-size: $text-micro;
+    font-weight: $weight-bold;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+}
+
+// The condition is clipped to the ticket like a paper tag, not badged like a pill.
+.rail-condition {
+  @include text-data;
+  padding: 2px $spacing-tight;
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--status-warning);
+  border: 1px dashed var(--status-warning);
+}
+
+.rail-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: $spacing-tight;
+  // Sized for the tallest thing this track ever draws: an off-path stage's
+  // second row (see .rail-stage.off-path below), whose own top/height put
+  // its bottom edge at ~3.9rem. 5.5rem left it with over an inch of unused
+  // headroom below that on every single-lane route (most of them — off-path
+  // stages only exist on parallel/split routes) and pushed the whole
+  // maintenance rail — and everything below it — taller than it needed to
+  // be. 4.25rem keeps a real margin under the off-path row without
+  // affecting single-lane routes, which only ever need the top row.
+  min-height: 4.25rem;
+}
+
+.rail-origin {
+  @include text-data;
+  align-self: center;
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  opacity: 0.55;
+}
+
+.rail-lanes {
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+// A second every tick, so the player can measure instead of guess. The ruler is
+// not the answer; the sum of the widths is, and that stays theirs to work out.
+.rail-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+// Everything to the right of the gate is time the window no longer covers.
+.rail-after-lock {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    color-mix(in srgb, currentColor 7%, transparent) 6px 12px
+  );
+  pointer-events: none;
+}
+
+// A locked gate retints the overrun region in the same red as the receipt
+// stamp below it, so the shaded area and the verdict read as one fact
+// instead of two separate pieces of evidence.
+.rail-track.did-lock .rail-after-lock {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    color-mix(in srgb, var(--status-error) 30%, transparent) 6px 12px
+  );
+}
+
+.rail-tick {
+  position: absolute;
+  inset-block: 0;
+  width: 0;
+  border-left: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+
+  &.is-major {
+    border-left-color: color-mix(in srgb, currentColor 26%, transparent);
+  }
+}
+
+.rail-tick-label {
+  @include text-data;
+  position: absolute;
+  bottom: 1px;
+  left: 3px;
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+// Stage widths are the whole point: a block is as wide as the seconds it costs.
+.rail-stage {
+  position: absolute;
+  top: $spacing-tight;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  padding: 0 $spacing-micro;
+  overflow: hidden;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--stage-ink) 42%, transparent);
+  border-left: 3px solid var(--stage-ink);
+  transition:
+    left 260ms cubic-bezier(0.25, 1, 0.5, 1),
+    width 260ms cubic-bezier(0.25, 1, 0.5, 1),
+    top 260ms cubic-bezier(0.25, 1, 0.5, 1);
+
+  // Work still running after the window shut. Hatched so an overrun reads as a
+  // deadline that was missed rather than a bar that ran out of room.
+  &.past-lock {
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0 4px,
+      color-mix(in srgb, var(--status-error) 55%, transparent) 4px 8px
+    );
+    border-left-color: var(--status-error);
+  }
+
+  // Work that is not setting the finish time drops to a quieter second track.
+  &.off-path {
+    top: calc(#{$spacing-tight} + 2.1rem);
+    height: 1.3rem;
+    opacity: 0.55;
+    background: color-mix(in srgb, var(--stage-ink) 20%, transparent);
+    border-left-style: dotted;
+  }
+}
+
+.rail-stage-name {
+  @include text-data;
+  font-size: $text-micro;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// The forecast, once the player has earned the right to see it.
+.rail-ghost {
+  position: absolute;
+  inset-block: 0;
+  width: 0;
+  border-left: 1px dashed currentColor;
+  opacity: 0.55;
+}
+
+.rail-playhead {
+  position: absolute;
+  inset-block: 0;
+  width: 0;
+  border-left: 2px solid var(--text-color);
+}
+
+// The signature: two teeth that meet when the window shuts.
+.rail-gate {
+  position: absolute;
+  inset-block: 0;
+  width: 1.35rem;
+  margin-left: -0.675rem;
+  pointer-events: none;
+  // The throat the release has to pass through.
+  border-left: 1px dashed color-mix(in srgb, currentColor 35%, transparent);
+}
+
+.gate-tooth {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 32%;
+  background: var(--status-success);
+  transition: height 260ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.gate-tooth-top {
+  top: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 68%);
+}
+
+.gate-tooth-bottom {
+  bottom: 0;
+  clip-path: polygon(0 32%, 100% 0, 100% 100%, 0 100%);
+}
+
+// Shut: the teeth grow until they meet and the throat closes with them.
+.rail-gate[data-state='shut'] {
+  border-left-style: solid;
+  border-left-color: var(--status-error);
+
+  .gate-tooth {
+    height: 50%;
+    background: var(--status-error);
+  }
+}
+
+.rail-lock-time {
+  @include text-data;
+  position: absolute;
+  top: calc(50% - 0.55em);
+  left: calc(100% + 2px);
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+.rail-read {
+  margin: 0;
+  font-size: $text-small;
+  line-height: 1.4;
+}
+
+// ── Release levers ──────────────────────────────────────────────────────────
+// The settings that buy time, lifted out of the node inspector and onto the
+// desk. Slowest option sits left, so pulling right always means trading
+// something away. Nothing here states the finish time.
+
+.lever-bank {
+  display: grid;
+  // Each lever group holds three option columns; 19rem guarantees every
+  // option enough width that its label and trade wrap at word boundaries
+  // instead of mid-word. The zone label spans all tracks, so auto-fit
+  // cannot collapse unused ones — the group minimum is what actually
+  // decides how many groups share a row.
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: $spacing-tight $spacing-standard;
+  padding-top: $spacing-tight;
+  border-top: 1px solid var(--border-color);
+}
+
+.desk-zone-label {
+  @include text-data;
+  grid-column: 1 / -1;
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--status-warning);
+}
+
+.lever {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-micro;
+  min-width: 0;
+}
+
+.lever-title {
+  @include text-data;
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.lever-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+
+  // Below the desk's verified 390px phone target, three columns squeeze the
+  // label/trade/mark stack too hard to read even without truncation. Stack the
+  // options instead so each one keeps a full-width line to wrap onto. No
+  // design-system breakpoint sits near 480px, so this is a literal phone-width
+  // value: phone-width lever options stack so trade text stays readable.
+  @media (max-width: 30rem) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lever-option {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: $spacing-micro;
+  min-height: $touch-target-min;
+  min-width: 0;
+  text-align: left;
+  color: var(--text-color);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: border-color 120ms ease-out;
+
+  &:hover:not(.is-set) {
+    border-color: color-mix(in srgb, currentColor 45%, transparent);
+  }
+
+  // The set option is the one the rail is currently drawing.
+  &.is-set {
+    border-color: currentColor;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+}
+
+// Levers are the decision surface — the label and its trade must stay fully
+// readable down to the smallest supported viewport, so they wrap instead of
+// truncating. The grid stacking option column above keeps room to wrap into.
+.lever-label {
+  @include text-data;
+  font-size: $text-small;
+  font-weight: $weight-semibold;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.lever-trade {
+  @include text-data;
+  font-size: $text-micro;
+  line-height: 1.3;
+  opacity: 0.72;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+// Naming the cost is the whole point of lifting these onto the desk.
+.lever-mark {
+  @include text-data;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  color: var(--status-warning);
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.stamp-deck {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) repeat(2, minmax(9rem, 0.42fr));
+  align-items: stretch;
+  gap: $spacing-tight;
+  padding-top: $spacing-tight;
+  border-top: 1px solid var(--border-color);
+}
+
+.stamp-prompt {
+  @include text-data;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  font-size: $text-small;
+  line-height: 1.35;
+  opacity: 0.78;
+
+  strong {
+    font-size: $text-micro;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.72;
+  }
+}
+
+// Blunt, square, letterspaced: a rubber stamp, not a call to action.
+.stamp {
+  @include text-data;
+  min-height: $touch-target-min;
+  padding: $spacing-standard $spacing-comfortable;
+  font-size: $text-medium;
+  font-weight: $weight-bold;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-color);
+  background: transparent;
+  border: 2px solid currentColor;
+  cursor: pointer;
+  transition: transform 90ms ease-out;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.stamp-blocked {
+  @include text-data;
+  margin: 0;
+  padding: $spacing-tight;
+  font-size: $text-small;
+  color: var(--text-color);
+  border: 1px solid var(--status-warning);
+}
+
+.stamp-ships:not(:disabled) {
+  color: var(--status-success);
+}
+
+.stamp-locks:not(:disabled) {
+  color: var(--status-error);
+}
+
+// The result reads as ink pressed onto the ticket, slightly off square.
+.rail-stamp {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-standard;
+  flex-wrap: wrap;
+
+  strong {
+    @include text-data;
+    font-size: $text-large;
+    font-weight: $weight-bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px $spacing-tight;
+    border: 2px solid currentColor;
+    transform: rotate(-1.2deg);
+  }
+
+  &.did-release strong {
+    color: var(--status-success);
+  }
+
+  &.did-lock strong {
+    color: var(--status-error);
+  }
+}
+
+.rail-seen {
+  @include text-data;
+  margin: 0;
+  font-size: $text-micro;
+  opacity: 0.6;
+}
+
+// ── Shift receipt ───────────────────────────────────────────────────────────
+// Printed where the run happened rather than thrown over it, so there is no
+// overlay to dismiss before the player can act on what it says.
+
+.shift-receipt {
+  display: flex;
+  flex-direction: column;
+  // Tighter than the desk's usual $spacing-tight rhythm: the receipt already
+  // reads as one dense card (kicker folded into the stamp row, the follow-up
+  // action paired inline with its copy below), so the remaining rows don't
+  // need full component-level breathing room between them.
+  gap: 2px;
+  padding-top: 2px;
+  border-top: 1px solid var(--border-color);
+  background: repeating-linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--text-area-color) 96%, currentColor) 0 1px,
+    transparent 1px 1.55rem
+  );
+}
+
+.receipt-kicker {
+  @include text-data;
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+// The receipt's stand-in while the bay is open: one quiet line instead of
+// the full stamped card, on the same border-top rule the card itself uses
+// so it still reads as "the receipt, minimized" rather than a new element.
+.receipt-kicker-bay {
+  @include text-data;
+  margin: 0;
+  padding-top: $spacing-micro;
+  font-size: $text-micro;
+  letter-spacing: 0.04em;
+  opacity: var(--desk-ink-quiet);
+  border-top: 1px solid var(--border-color);
+}
+
+.receipt-head {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-standard;
+  flex-wrap: wrap;
+}
+
+.receipt-stamp {
+  @include text-data;
+  font-size: $text-large;
+  font-weight: $weight-bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px $spacing-tight;
+  border: 2px solid currentColor;
+  transform: rotate(-1.2deg);
+}
+
+.did-release .receipt-stamp {
+  color: var(--status-success);
+}
+
+.did-lock .receipt-stamp {
+  color: var(--status-error);
+}
+
+.receipt-call {
+  @include text-data;
+  font-size: $text-micro;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+
+  &.was-right {
+    color: var(--status-success);
+    opacity: 1;
+  }
+}
+
+// One quiet line naming what the verdict meant, directly under the headline
+// — the headline states the mechanism's result, this states the consequence.
+.receipt-consequence {
+  max-width: 44rem;
+  margin: 0;
+  font-size: $text-small;
+  line-height: 1.4;
+  opacity: 0.72;
+}
+
+.receipt-lines {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.receipt-line {
+  display: flex;
+  gap: $spacing-tight;
+  align-items: baseline;
+  font-size: $text-small;
+
+  dt {
+    @include text-data;
+    font-size: $text-micro;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // What the player spent to make the window, named rather than scored.
+  &.is-traded dd {
+    color: var(--status-warning);
+  }
+
+  &.is-feat dd {
+    color: var(--status-success);
+    font-weight: $weight-bold;
+    text-transform: uppercase;
+  }
+}
+
+// Pairs a receipt follow-up's copy (near-miss prompt, next-ticket teaser)
+// inline with its action button on one row — mirrors the YOUR CALL stamp
+// deck (copy left, action right) instead of stacking the button as its own
+// row under the receipt, which is what pushed the desk past one viewport at
+// short-to-mid desktop heights (see .canvas-wrapper's clamp() below).
+.receipt-followup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $spacing-standard;
+
+  > .receipt-near-miss,
+  > .next-ticket-teaser {
+    flex: 1 1 auto;
+    min-width: 0;
+    align-self: center;
+  }
+
+  > .receipt-actions {
+    flex: 0 0 auto;
+  }
+}
+
+.receipt-near-miss {
+  max-width: 44rem;
+  margin: 0;
+  font-size: $text-small;
+  line-height: 1.45;
+}
+
+// Was a bordered docket box (route-docket, feat-docket's dashed-border
+// shape) on its own line above the follow-up button; that box's own
+// padding was the single tallest element in the receipt at short-to-mid
+// desktop heights. Same copy, same plain-paragraph treatment as
+// .receipt-near-miss above it now that it sits inline with its action.
+.next-ticket-teaser {
+  max-width: 44rem;
+  margin: 0;
+  font-size: $text-small;
+  line-height: 1.45;
+}
+
+.teaser-kicker {
+  @include text-data;
+  margin-right: $spacing-micro;
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: var(--desk-ink-quiet);
+}
+
+.receipt-actions {
+  display: flex;
+  gap: $spacing-tight;
+  flex-wrap: wrap;
+}
+
+.receipt-btn {
+  @include text-data;
+  min-height: $touch-target-min;
+  padding: $spacing-tight $spacing-comfortable;
+  font-size: $text-small;
+  font-weight: $weight-semibold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-color);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+
+  &.is-forward {
+    border-color: currentColor;
+    color: var(--status-success);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(in srgb, currentColor 7%, transparent);
+    outline: 0;
+    border-color: currentColor;
+  }
+}
+
+// ── Route choice ───────────────────────────────────────────────────────────
+// A small authored hand after the gate answers. Each choice describes an
+// operational structure; it intentionally withholds the resulting duration.
+.route-choice {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.65fr) minmax(0, 1.35fr);
+  gap: $spacing-standard;
+  padding: $spacing-standard 0;
+  border-block: 1px solid var(--border-color);
+
+  header {
+    min-width: 0;
+
+    > span {
+      @include text-data;
+      font-size: $text-micro;
+      font-weight: $weight-bold;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--status-warning);
+    }
+
+    h3 {
+      margin: $spacing-micro 0;
+      font-size: $text-medium;
+    }
+
+    p {
+      margin: 0;
+      font-size: $text-small;
+      line-height: 1.4;
+      opacity: 0.68;
+    }
+  }
+}
+
+.route-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $spacing-tight;
+}
+
+.route-choice-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: $spacing-micro;
+  min-width: 0;
+  min-height: 8.5rem;
+  padding: $spacing-standard;
+  text-align: left;
+  color: var(--text-color);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: currentColor;
+    background: color-mix(in srgb, currentColor 5%, transparent);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.46;
+    border-color: var(--status-error);
+  }
+
+  strong {
+    font-size: $text-base;
+  }
+}
+
+.route-choice-kicker,
+.route-choice-effect,
+.route-choice-action {
+  @include text-data;
+  font-size: 10px;
+}
+
+.route-choice-kicker {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--status-warning);
+}
+
+.route-choice-description {
+  font-size: $text-small;
+  line-height: 1.35;
+  opacity: 0.76;
+}
+
+.route-choice-effect {
+  color: var(--status-success);
+  font-weight: $weight-bold;
+}
+
+.route-choice-action {
+  justify-self: start;
+  font-weight: $weight-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+// ── Shift ledger ────────────────────────────────────────────────────────────
+// The desk's closing record: one row per ticket, plain and human. No score,
+// no stars, no percentages — just what was called, what happened, and the
+// route it was signed on.
+.shift-closeout {
+  @include text-data;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-tight;
+  padding: $spacing-standard;
+  color: var(--status-success);
+  border: 2px solid currentColor;
+  clip-path: polygon(0 0, calc(100% - 0.75rem) 0, 100% 0.75rem, 100% 100%, 0 100%);
+}
+
+.closeout-kicker {
+  font-size: $text-micro;
+  font-weight: $weight-bold;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ledger {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-tight;
+}
+
+.ledger-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: $spacing-tight;
+  border-top: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+
+  &:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  dt {
+    font-size: $text-micro;
+    font-weight: $weight-bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  dd {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: $spacing-tight;
+    font-size: $text-small;
+    color: var(--text-color);
+  }
+}
+
+.ledger-call {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ledger-outcome {
+  opacity: 0.85;
+}
+
+.ledger-route {
+  font-size: $text-micro;
+  opacity: 0.6;
+}
+
+.ledger-feat {
+  color: var(--status-success);
+  font-weight: $weight-bold;
+  text-transform: uppercase;
+  font-size: $text-micro;
+}
+
+.ledger-reclaimed {
+  color: var(--status-warning);
+  font-size: $text-micro;
+}
+
+.closeout-line {
+  font-size: $text-base;
+  letter-spacing: 0.02em;
+}
+
+// ── Resolve-moment motion ────────────────────────────────────────────────────
+// The half second after a result appears is where the fun lives. Every rule
+// in here is scoped to the no-preference query on purpose: a reduced-motion
+// user gets the resolved DOM state instantly, with nothing to wait out.
+@media (prefers-reduced-motion: no-preference) {
+  // Stamp press: a physical depress under the pointer, not just a hover lift.
+  .stamp:active:not(:disabled) {
+    transform: scale(0.94) translateY(1px);
+    transition: transform 80ms ease-out;
+  }
+
+  // Locked: the teeth snap shut with a slight overshoot instead of a linear
+  // close, so a miss reads as an impact.
+  .rail-gate[data-state='shut'] .gate-tooth {
+    animation: gate-clamp-shut 220ms cubic-bezier(0.3, 0, 0.2, 1);
+  }
+
+  @keyframes gate-clamp-shut {
+    0% {
+      height: 32%;
+    }
+    55% {
+      height: 58%;
+    }
+    100% {
+      height: 50%;
+    }
+  }
+
+  // Released: a clean, quick clearance flash — no red, nothing to clamp.
+  .rail-track.is-resolved:not(.did-lock) .gate-tooth {
+    animation: gate-clear 260ms ease-out;
+  }
+
+  @keyframes gate-clear {
+    0% {
+      filter: brightness(1);
+    }
+    40% {
+      filter: brightness(1.4);
+    }
+    100% {
+      filter: brightness(1);
+    }
+  }
+
+  // The receipt prints in rather than popping over the rail.
+  .shift-receipt {
+    animation: receipt-print 220ms ease-out;
+  }
+
+  @keyframes receipt-print {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // Receipt lines stagger in; last line settles well under the 400ms budget.
+  .receipt-line {
+    opacity: 0;
+    animation: receipt-line-in 160ms ease-out forwards;
+  }
+
+  .receipt-line:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .receipt-line:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .receipt-line:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .receipt-line:nth-child(n + 4) {
+    animation-delay: 150ms;
+  }
+
+  @keyframes receipt-line-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-tooth,
+  .rail-stage,
+  .stamp {
+    transition: none;
+  }
+}
+
+@media (max-width: $breakpoint-small) {
+  .release-brief {
+    grid-template-columns: 1fr;
+    gap: $spacing-tight;
+    padding: $spacing-tight $spacing-standard;
+  }
+
+  .brief-copy {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .route-docket {
+    grid-column: 1;
+    grid-row: 2;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .feat-docket {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .patch-bay-toggle {
+    grid-column: 1;
+    grid-row: 4;
+    width: 100%;
+  }
+
+  .dispatch-rail {
+    padding: $spacing-tight;
+  }
+
+  .rail-stage-name {
+    display: none;
+  }
+
+  .stamp-deck,
+  .route-choice,
+  .route-choice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: $breakpoint-mobile) {
+  // On a phone the graph is already summarized on the ticket and the schedule
+  // is the thing the player must read. Give its 150px back to the two stamp
+  // actions; opening the patch bay restores the editable canvas.
+  .prototype-focus .canvas-wrapper {
+    display: none;
+  }
+}
+
+// Shared by two contexts that both want the same denser desk: a short
+// viewport (there's less of it, physically) and the patch bay open (the
+// player is editing, not reading, so the surrounding chrome can give up its
+// usual breathing room). Same content everywhere this applies — no row or
+// label is removed, every value here is a tightened version of its roomy
+// counterpart.
+@mixin dense-desk-chrome {
+  .release-brief {
+    padding: $spacing-tight $spacing-standard;
+  }
+
+  .route-docket > span:last-child {
+    display: none;
+  }
+
+  .dispatch-rail {
+    gap: $spacing-micro;
+    padding: $spacing-tight $spacing-major $spacing-tight $spacing-tight;
+  }
+
+  .rail-track {
+    min-height: 4rem;
+  }
+
+  .lever-option {
+    min-height: 2.25rem;
+  }
+
+  .lever-mark {
+    display: none;
+  }
+
+  .stamp {
+    min-height: 2.25rem;
+    padding: $spacing-micro $spacing-standard;
+  }
+
+  // Same touch-target trim as .stamp above, now that .receipt-btn can also
+  // sit inline in a .receipt-followup row instead of stacked full-width.
+  .receipt-btn {
+    min-height: 2.25rem;
+    padding: $spacing-micro $spacing-standard;
+  }
+
+  // The verdict receipt is the tallest ticket-1 state (kicker + stamp row +
+  // consequence line + follow-up row, vs. the drafting stamp deck's single
+  // row), so it gets its own extra trim here on top of .shift-receipt's
+  // universal spacing-micro rhythm — same content, no row removed, just
+  // denser than the roomy-height version.
+  .shift-receipt {
+    gap: 1px;
+    padding-top: 1px;
+  }
+
+  .receipt-stamp {
+    font-size: $text-medium;
+    padding: 1px $spacing-micro;
+    border-width: 1px;
+  }
+
+  .receipt-consequence {
+    font-size: $text-micro;
+    line-height: 1.2;
+  }
+
+  .receipt-line,
+  .next-ticket-teaser {
+    font-size: $text-micro;
+  }
+}
+
+// A short window is the case where the desk starts crowding out the graph it is
+// describing. Give the height back rather than letting the canvas collapse.
+// The brief paragraph stays: it carries the ticket's hook (who is waiting and
+// what the window means), and most laptop viewports are 800px or shorter.
+@media (max-height: 50rem) {
+  @include dense-desk-chrome;
+}
+
+// The patch bay is a dense working mode regardless of viewport height — the
+// player is actively placing/connecting stages, not reading the rail, so the
+// same density this desk already uses on short viewports applies here too.
+// This is what lets the bay-open canvas budget (.canvas-wrapper's clamp()
+// above) actually reach zero-overflow at roomy heights instead of stopping
+// at its 14rem floor: real chrome drops by roughly the same amount this
+// mixin already proved out below 800px.
+.game-grid.prototype-workbench {
+  @include dense-desk-chrome;
+
+  // Bay-open is the only state that also needs zero-overflow at roomy
+  // heights (>800px), where the short-viewport tier above never had to
+  // prove itself — .canvas-wrapper's bay-open clamp (above) still bottoms
+  // out at its 14rem floor with the short-viewport-level trims alone, so
+  // this goes further: tighter still than "short viewport," specific to
+  // "actively editing." Same text everywhere, no line removed — margins,
+  // padding, and line-height only.
+  // Half of $spacing-micro: five stacked sections (brief, manifest, canvas,
+  // shelf, rail) means four gaps, so even a 2px trim per gap adds up. The
+  // sections still read as separate blocks — this only tightens the seam.
+  .canvas-main {
+    gap: 2px;
+  }
+
+  .release-brief {
+    padding: 2px $spacing-standard;
+  }
+
+  .brief-copy {
+    h2 {
+      margin: 0 0 2px;
+      font-size: $text-large;
+      line-height: 1.1;
+    }
+
+    p {
+      line-height: 1.3;
+    }
+  }
+
+  // Same words, no border-block and no vertical padding: the dashed rules
+  // and breathing room were legible at rest, but mid-edit this line is a
+  // one-time orientation note, not evidence worth a frame of its own.
+  .patch-bay-manifest {
+    padding: 0;
+    border-block: none;
+    line-height: 1.2;
+  }
+
+  .dispatch-rail {
+    padding: $spacing-micro $spacing-major $spacing-micro $spacing-micro;
+  }
+}
+
+.keyboard-hints {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-generous; // 20px between left and right groups
+  padding: $spacing-tight $spacing-standard; // 8px 12px
+  font-size: $text-micro; // 11px (was 12px — keeps the hint compact)
+  color: var(--text-color);
+  background: var(--text-area-color);
+  border-top: 1px solid var(--border-color);
+  // NO box-shadow - borders-only design
+  z-index: 10;
+  opacity: 0.85; // Subtle hint, never the focal point
+
+  .hint-group {
+    display: flex;
+    align-items: center;
+    gap: $spacing-comfortable; // 16px between hints inside a group
+  }
+
+  .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-micro; // 4px between kbd and label
+    white-space: nowrap;
+  }
+
+  .hint-label {
+    color: var(--text-color);
+    opacity: 0.7;
+  }
+
+  // Vertical pill divider between the two semantic groups (interaction vs nav).
+  .hint-divider {
+    display: inline-block;
+    width: 1px;
+    height: 1.25rem;
+    background: var(--border-color);
+    opacity: 0.5;
+  }
+
+  kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    padding: 0.125rem 0.4rem; // 2px 6.4px — tighter than before
+    font-family: $font-mono;
+    font-size: $text-micro;
+    font-weight: $weight-semibold;
+    color: var(--text-color);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-base;
+    line-height: 1.2;
+    // NO box-shadow - borders-only design
+  }
+
+  @media (max-width: $breakpoint-mobile) {
+    display: none; // Hide the keyboard hint bar on touch — interaction is touch-driven there
+
+    // ...but the touch hint bar shares this base class and IS the mobile affordance,
+    // so re-assert its layout — otherwise it gets swallowed by the hide above and the
+    // only built-in touch guidance never shows. ('.keyboard-hints.touch-hints' wins on
+    // specificity over the bare '.keyboard-hints' display:none in this same query.)
+    &.touch-hints {
+      display: flex;
+    }
+  }
+}

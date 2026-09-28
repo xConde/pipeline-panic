@@ -1,0 +1,250 @@
+// Pipeline Panic Design System
+// Direction: Technical precision with utility focus
+// Philosophy: Dense information architecture for power users who orchestrate pipelines
+
+// =============================================================================
+// 4px Grid System - All spacing follows this strictly
+// =============================================================================
+$grid-unit: 4px;
+$spacing-micro: $grid-unit; // 4px - icon gaps, hairline spacing
+$spacing-tight: $grid-unit * 2; // 8px - within components
+$spacing-standard: $grid-unit * 3; // 12px - between related elements
+$spacing-comfortable: $grid-unit * 4; // 16px - section padding
+$spacing-generous: $grid-unit * 6; // 24px - between sections
+$spacing-major: $grid-unit * 8; // 32px - major separation
+
+// =============================================================================
+// Depth Strategy: Borders-only (Technical/Flat)
+// Perfect for dense, information-heavy interface
+// =============================================================================
+@mixin depth-border-subtle {
+  border: 0.5px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+}
+
+@mixin depth-border-standard {
+  border: 1px solid var(--border-color);
+}
+
+@mixin depth-border-strong {
+  border: 1px solid var(--dramatic-border-color);
+}
+
+// Dark mode specific border mixin for better contrast
+@mixin dark-border-panel {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+// No shadows - pure border-based depth
+// This creates a technical, precise aesthetic perfect for pipeline orchestration
+
+// =============================================================================
+// Typography System - System fonts for speed and clarity
+// =============================================================================
+// COUPLING: these two stacks MUST match CANVAS_FONT_MONO / CANVAS_FONT_SYSTEM
+// in game-constants.ts (same family order, copied verbatim). The canvas node
+// icons/labels and the empty-board prompt are drawn with ctx.font, which can't
+// read a SCSS variable at runtime, so the same font list is expressed twice —
+// if they drift, DOM text and canvas-drawn text render in visibly different
+// fonts.
+$font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+$font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+
+// Type Scale (following 4px grid influence)
+$text-micro: 11px; // Labels, metadata
+$text-small: 12px; // Secondary text
+$text-base: 14px; // Body text
+$text-medium: 16px; // Subheadings
+$text-large: 20px; // Section titles
+$text-xlarge: 24px; // Page headers
+
+// Type Weights
+$weight-regular: 400;
+$weight-medium: 500;
+$weight-semibold: 600;
+$weight-bold: 700;
+
+// =============================================================================
+// Border Radius System - Sharp/Technical
+// =============================================================================
+$radius-small: 2px; // Micro elements
+$radius-base: 4px; // Standard elements
+$radius-medium: 6px; // Cards, panels
+$radius-large: 8px; // Modals, overlays
+
+// =============================================================================
+// Color System - Semantic Only
+// =============================================================================
+// Structure is monochrome, color only for meaning.
+//
+// The --status-* tokens used to be declared here under `:root`, but this
+// partial compiles under Angular's emulated view encapsulation, which
+// rewrites `:root` into `:root[_ngcontent-xxx]` — a selector that can never
+// match the real document root, so every var(--status-*) reader resolved to
+// an empty string. The live declarations are styles/_layout.scss's `:host`
+// block (plus its `:host-context(.night-mode)` override), which actually
+// reaches the component's rendered element tree.
+
+// =============================================================================
+// Responsive Breakpoints - Mobile-first, Content-driven
+// =============================================================================
+// Mobile breakpoint set at 56rem (896px) instead of traditional 768px
+// This gives content-heavy panels (Level Guide, Objectives) breathing room
+// before switching to mobile modal layout. Better readability for dense information.
+$breakpoint-xs: 23.5rem; // 376px - iPhone SE / very small phones (added 2026-04-28 Phase 3)
+$breakpoint-small: 48rem; // 768px - Small screens & narrow windows
+$breakpoint-mobile: 56rem; // 896px - Mobile + small tablets (was 48rem/768px)
+$breakpoint-tablet: 64rem; // 1024px - Tablet landscape
+$breakpoint-desktop: 75rem; // 1200px - Desktop
+
+// WCAG 2.5.5 Target Size — minimum 44×44 CSS pixels for touch targets.
+// Use $touch-target-min on any interactive element that lacks padding-driven
+// 44px sizing already.
+$touch-target-min: 2.75rem; // 44px
+
+// =============================================================================
+// Canvas Scaling System
+// =============================================================================
+@mixin responsive-canvas {
+  // Mobile: Scale down canvas to fit viewport
+  @media (max-width: $breakpoint-mobile) {
+    // Use CSS transform for smooth scaling
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      padding-bottom: 60%; // 5:3 aspect ratio for mobile
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        // Ensure crisp rendering on high-DPI displays
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+      }
+    }
+  }
+
+  // Tablet: Intermediate scaling
+  @media (min-width: $breakpoint-mobile) and (max-width: $breakpoint-tablet) {
+    .canvas-wrapper {
+      max-height: 500px; // Cap height for tablets
+    }
+  }
+}
+
+// =============================================================================
+// Component Mixins
+// =============================================================================
+@mixin panel-base {
+  @include depth-border-standard;
+  border-radius: $radius-medium;
+  background: var(--text-area-color);
+  overflow: hidden;
+}
+
+@mixin button-base {
+  padding: $spacing-tight $spacing-comfortable;
+  font-size: $text-base;
+  font-weight: $weight-medium;
+  border-radius: $radius-base;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+@mixin text-data {
+  font-family: $font-mono;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@mixin scroll-fade($fade-size: 16px, $bg: var(--text-area-color)) {
+  overflow-y: auto;
+
+  &::before,
+  &::after {
+    content: '';
+    display: block;
+    position: sticky;
+    left: 0;
+    right: 0;
+    height: $fade-size;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &::before {
+    top: 0;
+    margin-bottom: -$fade-size;
+    background: linear-gradient(to bottom, #{$bg}, transparent);
+  }
+
+  &::after {
+    bottom: 0;
+    margin-top: -$fade-size;
+    background: linear-gradient(to top, #{$bg}, transparent);
+  }
+}
+
+// =============================================================================
+// Utility Classes
+// =============================================================================
+.text-micro {
+  font-size: $text-micro;
+}
+.text-small {
+  font-size: $text-small;
+}
+.text-base {
+  font-size: $text-base;
+}
+.text-medium {
+  font-size: $text-medium;
+}
+.text-large {
+  font-size: $text-large;
+}
+
+.p-tight {
+  padding: $spacing-tight;
+}
+.p-standard {
+  padding: $spacing-standard;
+}
+.p-comfortable {
+  padding: $spacing-comfortable;
+}
+
+.m-tight {
+  margin: $spacing-tight;
+}
+.m-standard {
+  margin: $spacing-standard;
+}
+.m-comfortable {
+  margin: $spacing-comfortable;
+}
+
+// Symmetric padding utilities
+.px-tight {
+  padding-left: $spacing-tight;
+  padding-right: $spacing-tight;
+}
+.py-tight {
+  padding-top: $spacing-tight;
+  padding-bottom: $spacing-tight;
+}
+.px-standard {
+  padding-left: $spacing-standard;
+  padding-right: $spacing-standard;
+}
+.py-standard {
+  padding-top: $spacing-standard;
+  padding-bottom: $spacing-standard;
+}

@@ -1,0 +1,545 @@
+<div class="pipeline-panic-wrapper" [attr.data-state-tick]="stateTick()">
+  <!-- projects-detail's own h1 (.launch-title) unmounts once the demo launches —
+       this page needs its own for a11y/SEO structure while the embed is live. -->
+  <h1 class="sr-only">Pipeline Panic</h1>
+  @if (gameError()) {
+    <div class="game-error-overlay" role="alert" aria-live="assertive">
+      <div class="game-error-content">
+        <span class="error-kicker">Desk fault</span>
+        <h2>Release view interrupted</h2>
+        <p>{{ gameError() }}</p>
+        @if (degradedFeatures().length > 0) {
+          <ul class="degraded-features-list">
+            @for (feature of degradedFeatures(); track feature) {
+              <li>{{ feature }}</li>
+            }
+          </ul>
+        }
+        <div class="game-error-actions">
+          <button class="result-btn primary" type="button" (click)="dismissError()">Keep the desk open</button>
+          <button class="result-btn" type="button" (click)="resetAndRecover()">Reload the shift</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="game-area">
+    <header class="game-header-compact" [class.bay-open]="prototypeWorkbenchOpen()">
+      <div class="release-desk-brand" aria-label="Pipeline Panic release desk">
+        <span>Pipeline Panic</span>
+        <strong>Release desk</strong>
+      </div>
+      <div class="header-right">
+        <div class="ticket-counter" aria-label="Release ticket progress">
+          <span>Ticket</span>
+          <strong>{{ formatTicketNumber(ticketNumber()) }} / {{ formatTicketNumber(ticketCount()) }}</strong>
+        </div>
+        <button
+          type="button"
+          class="mute-toggle"
+          (click)="toggleMute()"
+          [attr.aria-pressed]="isMuted()"
+          [attr.aria-label]="isMuted() ? 'Unmute desk audio' : 'Mute desk audio'"
+          [title]="isMuted() ? 'Unmute desk audio' : 'Mute desk audio'"
+        >
+          @if (isMuted()) {
+            <svg viewBox="0 0 256 256" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path
+                d="M213.92,210.62a8,8,0,1,1-11.84,10.76L160,175.09v48.6a8.29,8.29,0,0,1-3.91,7.18,8,8,0,0,1-9-.56l-65.55-51A4,4,0,0,1,80,176.18V87.09L42.08,45.38A8,8,0,1,1,53.92,34.62Zm-27.21-55.46a8,8,0,0,0,11.29-.7,40,40,0,0,0,0-52.88,8,8,0,1,0-12,10.57,24,24,0,0,1,0,31.72A8,8,0,0,0,186.71,155.16Zm40.92-80.49a8,8,0,1,0-11.92,10.66,64,64,0,0,1,0,85.34,8,8,0,1,0,11.92,10.66,80,80,0,0,0,0-106.66ZM153,119.87a4,4,0,0,0,7-2.7V32.25a8.27,8.27,0,0,0-2.88-6.4,8,8,0,0,0-10-.16L103.83,59.33a4,4,0,0,0-.5,5.85ZM60,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H60a4,4,0,0,0,4-4V84A4,4,0,0,0,60,80Z"
+              />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 256 256" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path
+                d="M160,32.25V223.69a8.29,8.29,0,0,1-3.91,7.18,8,8,0,0,1-9-.56l-65.57-51A4,4,0,0,1,80,176.16V79.84a4,4,0,0,1,1.55-3.15l65.57-51a8,8,0,0,1,10,.16A8.27,8.27,0,0,1,160,32.25ZM60,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H60a4,4,0,0,0,4-4V84A4,4,0,0,0,60,80Zm126.77,20.84a8,8,0,0,0-.72,11.3,24,24,0,0,1,0,31.72,8,8,0,1,0,12,10.58,40,40,0,0,0,0-52.88A8,8,0,0,0,186.74,100.84Zm40.89-26.17a8,8,0,1,0-11.92,10.66,64,64,0,0,1,0,85.34,8,8,0,1,0,11.92,10.66,80,80,0,0,0,0-106.66Z"
+              />
+            </svg>
+          }
+        </button>
+      </div>
+    </header>
+
+    <div
+      class="game-grid"
+      [class.prototype-focus]="!prototypeWorkbenchOpen()"
+      [class.prototype-workbench]="prototypeWorkbenchOpen()"
+    >
+      <main class="canvas-main">
+        <section class="release-brief" aria-labelledby="release-brief-title">
+          <div class="brief-copy">
+            <span class="brief-kicker">Evidence · Ticket {{ formatTicketNumber(ticketNumber()) }}</span>
+            @if (shiftComplete()) {
+              <h2 id="release-brief-title">The shift is signed.</h2>
+              <p>Two calls, two operating rules, one release model you can explain.</p>
+            } @else if (activeCondition()) {
+              <h2 id="release-brief-title">Same route. One agent.</h2>
+              <p>
+                Worse night, same fix line. The runner is down to one agent, so nothing overlaps and yesterday's quick
+                answer may not survive it.
+              </p>
+            } @else if (routeChoiceAvailable()) {
+              <h2 id="release-brief-title">You read it. Now route it.</h2>
+              <p>The receipt paid out the explanation. Spend it on the next release approach.</p>
+            } @else if (callAccuracy() === 'wrong') {
+              <h2 id="release-brief-title">The gate gave you a number.</h2>
+              <p>Your call missed. The measured finish is enough evidence to make the next one better.</p>
+            } @else if (routeDecisionMade()) {
+              <h2 id="release-brief-title">New route. Same window.</h2>
+              <p>The desk rewired the checks. Decide whether the saved wait is enough.</p>
+            } @else {
+              <h2 id="release-brief-title">Does this fix make tonight's window?</h2>
+              <p>
+                Support is waiting on it. The route is wired; the rail shows what each stage costs, and the gate shuts
+                at {{ formatReleaseSeconds(railWindowSeconds()) }}s until morning.
+              </p>
+            }
+          </div>
+
+          @if (activeReleaseRoutePlan(); as plan) {
+            <div class="route-docket">
+              <span class="route-docket-label">On the desk</span>
+              <strong>{{ plan.label }}</strong>
+              <span>{{ plan.topology }}</span>
+            </div>
+          } @else {
+            <div class="route-docket">
+              <span class="route-docket-label">On the desk</span>
+              <strong>Custom patch</strong>
+              <span>Hand-edited route</span>
+            </div>
+          }
+
+          <div class="feat-docket" [class.is-earned]="earnedFeat()">
+            <span>Optional feat</span>
+            @if (activeCondition()) {
+              <strong>Honest lock</strong>
+              <small>Call LOCKS without a shortcut.</small>
+            } @else {
+              <strong>First read</strong>
+              <small>Read the inherited route on attempt one.</small>
+            }
+          </div>
+
+          <button type="button" class="patch-bay-toggle" (click)="togglePrototypeWorkbench()">
+            {{ prototypeWorkbenchOpen() ? 'Return to desk' : 'Open patch bay' }}
+            <span aria-hidden="true">{{ prototypeWorkbenchOpen() ? '×' : '↗' }}</span>
+          </button>
+        </section>
+
+        @if (prototypeWorkbenchOpen()) {
+          <p class="patch-bay-manifest">
+            <span>Patch bay</span>
+            Every edit redraws the rail. The stamp still makes the call.
+          </p>
+        }
+
+        <div class="canvas-wrapper" (drop)="onCanvasDrop($event)" (dragover)="onCanvasDragOver($event)">
+          <canvas #gameCanvas class="game-canvas" aria-hidden="true"></canvas>
+          <canvas
+            #pipelineCanvas
+            class="pipeline-canvas"
+            role="application"
+            [attr.tabindex]="prototypeWorkbenchOpen() ? 0 : -1"
+            [attr.aria-label]="
+              prototypeWorkbenchOpen()
+                ? 'Release patch bay. Choose a stage from the shelf, then press Enter here to place it. Arrow keys move a selected stage, N cycles stages, and Delete removes one.'
+                : (activeReleaseRoutePlan()?.label ?? 'Custom release route') +
+                  '. Read its schedule in the maintenance rail below.'
+            "
+            (click)="onCanvasClick($event)"
+            (keydown)="onCanvasPlacementKey($event)"
+          ></canvas>
+          <canvas #particleCanvas class="particle-canvas" aria-hidden="true"></canvas>
+
+          @if (!prototypeWorkbenchOpen()) {
+            <div class="prototype-canvas-lock" aria-hidden="true">
+              <span>{{ activeReleaseRoutePlan()?.label ?? 'Custom route' }} · ready to call</span>
+            </div>
+          }
+
+          @if (prototypeWorkbenchOpen() && !isRunning) {
+            @if (isMobileLayout) {
+              <div class="keyboard-hints touch-hints" role="region" aria-label="Patch bay touch controls">
+                <span class="hint-group"><span class="hint">Tap shelf → tap route to place</span></span>
+                <span class="hint-divider" aria-hidden="true"></span>
+                <span class="hint-group"><span class="hint">Connect → tap two stages</span></span>
+              </div>
+            } @else {
+              <div class="keyboard-hints" role="region" aria-label="Patch bay keyboard controls">
+                <span class="hint-group">
+                  <span class="hint"><kbd>Shift</kbd>+Click <span class="hint-label">connect</span></span>
+                  <span class="hint"><kbd>Alt</kbd>+Click <span class="hint-label">reverse</span></span>
+                </span>
+                <span class="hint-divider" aria-hidden="true"></span>
+                <span class="hint-group">
+                  <span class="hint"><kbd>Enter</kbd> <span class="hint-label">place</span></span>
+                  <span class="hint"><kbd>N</kbd> <span class="hint-label">cycle</span></span>
+                  <span class="hint"><kbd>↑↓←→</kbd> <span class="hint-label">move</span></span>
+                  <span class="hint"><kbd>Del</kbd> <span class="hint-label">remove</span></span>
+                  <span class="hint"><kbd>⌘Z</kbd> <span class="hint-label">undo</span></span>
+                </span>
+              </div>
+            }
+          }
+        </div>
+
+        @if (prototypeWorkbenchOpen()) {
+          <aside class="sidebar-left patch-shelf">
+            <app-node-palette
+              [availableNodes]="availableNodes()"
+              [selectedNode]="selectedNode"
+              [isRunning]="isRunning"
+              [selectedForPlacement]="pendingPlacement()"
+              (nodeDragStart)="onNodeDragStart($event.event, $event.node)"
+              (nodeTap)="onNodeTap($event)"
+              (closeDetail)="closeNodeDetail()"
+              (deleteNode)="deleteSelectedNode()"
+              (configChange)="updateNodeConfig($event)"
+            />
+            <app-pipeline-toolbar
+              [isRunning]="isRunning"
+              [hasSelection]="!!selectedNode"
+              [canUndo]="undoRedoService.canUndo"
+              [canRedo]="undoRedoService.canRedo"
+              [connectModeActive]="connectMode()"
+              (stopClick)="stopPipeline()"
+              (restoreClick)="restoreDealtRoute()"
+              (deleteClick)="deleteSelectedNode()"
+              (undoClick)="undo()"
+              (redoClick)="redo()"
+              (connectModeToggle)="onConnectModeToggle()"
+            />
+            @if (placementRefusedReason(); as reason) {
+              <p class="placement-refused" role="status" aria-live="polite">{{ reason }}</p>
+            }
+            @if (runBlockedReason) {
+              <p class="run-blocked-reason" role="status">Route incomplete · {{ runBlockedReason }}</p>
+            }
+          </aside>
+        }
+
+        <section class="dispatch-rail" aria-labelledby="dispatch-rail-title">
+          <header class="rail-head">
+            <div>
+              <span>Evidence</span>
+              <h3 id="dispatch-rail-title">Maintenance window</h3>
+            </div>
+            @if (activeCondition(); as condition) {
+              <span class="rail-condition" [attr.data-condition]="condition.id">{{ conditionLabel(condition) }}</span>
+            }
+          </header>
+
+          <div
+            class="rail-track"
+            [class.is-committed]="dispatchState() === 'committed'"
+            [class.is-resolved]="dispatchState() === 'resolved'"
+            [class.did-lock]="releaseWindowOutcome()?.verdict === 'locked'"
+          >
+            <span class="rail-origin" aria-hidden="true">0</span>
+            <div class="rail-lanes">
+              <span class="rail-after-lock" aria-hidden="true" [style.left.%]="railLockPercent()"></span>
+              <div class="rail-ticks" aria-hidden="true">
+                @for (tick of railTicks(); track tick.seconds) {
+                  <span class="rail-tick" [class.is-major]="tick.major" [style.left.%]="tick.percent">
+                    @if (tick.major) {
+                      <span class="rail-tick-label">{{ tick.seconds }}</span>
+                    }
+                  </span>
+                }
+              </div>
+
+              @for (stage of railStages(); track stage.nodeId) {
+                <span
+                  class="rail-stage"
+                  [class.off-path]="!stage.onCriticalPath"
+                  [class.past-lock]="stage.pastLock"
+                  [style.left.%]="stage.leftPercent"
+                  [style.width.%]="stage.widthPercent"
+                  [style.--stage-ink]="stage.color"
+                  [attr.title]="stage.name + ' · ' + formatReleaseSeconds(stage.seconds) + 's'"
+                >
+                  <span class="rail-stage-name">{{ stage.name }}</span>
+                </span>
+              }
+
+              @if (visibleForecast()?.durationSeconds; as predicted) {
+                <span
+                  class="rail-ghost"
+                  [style.left.%]="railPercent(predicted)"
+                  [attr.aria-label]="'Forecast arrival ' + formatReleaseSeconds(predicted) + ' seconds'"
+                ></span>
+              }
+              @if (dispatchState() !== 'drafting') {
+                <span class="rail-playhead" [style.left.%]="playheadPercent()" aria-hidden="true"></span>
+              }
+              <div class="rail-gate" [attr.data-state]="gateState()" [style.left.%]="railLockPercent()">
+                <span class="gate-tooth gate-tooth-top"></span>
+                <span class="gate-tooth gate-tooth-bottom"></span>
+                <span class="rail-lock-time">{{ formatReleaseSeconds(railWindowSeconds()) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="rail-read" role="status" aria-live="polite">{{ railReadout() }}</p>
+          @if (seenRouteSeconds(); as seen) {
+            <p class="rail-seen">You have run this exact route: {{ formatReleaseSeconds(seen) }}s.</p>
+          }
+
+          @if (activeCondition() && dispatchState() === 'drafting' && railStages().length > 0) {
+            <div class="lever-bank" role="group" aria-label="Release levers">
+              <span class="desk-zone-label">Levers</span>
+              @for (lever of releaseLevers; track lever.id) {
+                @if (leverAvailable(lever)) {
+                  <div class="lever">
+                    <span class="lever-title">{{ lever.title }}</span>
+                    <div class="lever-options" role="radiogroup" [attr.aria-label]="lever.title">
+                      @for (option of lever.options; track option.value) {
+                        <button
+                          type="button"
+                          class="lever-option"
+                          role="radio"
+                          [class.is-set]="leverSetting(lever) === option.value"
+                          [attr.aria-checked]="leverSetting(lever) === option.value"
+                          (click)="pullLever(lever, option)"
+                          [title]="option.trade + (option.mark ? ' · Stamps ' + option.mark : '')"
+                        >
+                          <span class="lever-label">{{ option.label }}</span>
+                          <span class="lever-trade">{{ option.trade }}</span>
+                          @if (option.mark) {
+                            <span class="lever-mark" aria-label="Stamps {{ option.mark }}">{{ option.mark }}</span>
+                          }
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          }
+
+          @if (dispatchState() === 'drafting') {
+            <div class="stamp-deck">
+              <span class="stamp-prompt">
+                <strong>Your call</strong>
+                Does it make the {{ formatReleaseSeconds(railWindowSeconds()) }}s window? Stamp what the gate will do.
+              </span>
+              <button
+                type="button"
+                class="stamp stamp-ships"
+                (click)="stampAndDispatch('ships')"
+                [disabled]="!canStamp"
+              >
+                Ships
+              </button>
+              <button
+                type="button"
+                class="stamp stamp-locks"
+                (click)="stampAndDispatch('locks')"
+                [disabled]="!canStamp"
+              >
+                Locks
+              </button>
+            </div>
+            @if (releaseReadinessMessage(); as blockedReason) {
+              <p class="stamp-blocked" role="status">Stamp blocked · {{ blockedReason }}</p>
+            }
+          }
+
+          @if (releaseWindowOutcome(); as outcome) {
+            @if (prototypeWorkbenchOpen()) {
+              <!-- The receipt is stale context while editing a new route in
+                   the bay — the full block reappears once the bay closes.
+                   This one line keeps the "there is a verdict on file" fact
+                   visible without paying its full height. -->
+              <p class="receipt-kicker-bay">
+                Attempt {{ ticketAttemptCount() }} receipt on file · return to desk to review
+              </p>
+            } @else {
+              <div
+                class="shift-receipt"
+                [class.did-release]="outcome.verdict === 'released'"
+                [class.did-lock]="outcome.verdict === 'locked'"
+                role="region"
+                aria-labelledby="receipt-title"
+              >
+                <div class="receipt-head">
+                  <!-- Same baseline row as the stamp instead of its own line above
+                       it — one fewer row in every receipt state, verdict-state
+                     content unchanged. -->
+                  <span class="receipt-kicker">Verdict receipt · Attempt {{ ticketAttemptCount() }}</span>
+                  <strong class="receipt-stamp" id="receipt-title" aria-live="polite">
+                    @if (outcome.verdict === 'released') {
+                      Shipped @ {{ formatReleaseSeconds(outcome.actualSeconds) }}
+                    } @else {
+                      Gate locked · {{ formatReleaseSeconds(outcome.requiredReductionSeconds) }}s late
+                    }
+                  </strong>
+                  @if (callAccuracy(); as accuracy) {
+                    <span class="receipt-call" [class.was-right]="accuracy === 'correct'">
+                      Called {{ playerCall() }} · {{ accuracy === 'correct' ? 'right' : 'wrong' }}
+                    </span>
+                  }
+                </div>
+
+                @if (receiptConsequence(); as consequence) {
+                  <p class="receipt-consequence">{{ consequence }}</p>
+                }
+
+                @if (callAccuracy() === 'correct') {
+                  <dl class="receipt-lines">
+                    <div class="receipt-line">
+                      <dt>Longest chain</dt>
+                      <dd>{{ outcome.criticalPathLabel }}</dd>
+                    </div>
+                    @for (mark of artifactMarks(); track mark.nodeId) {
+                      <div class="receipt-line is-traded">
+                        <dt>{{ artifactMarkLabel(mark) }}</dt>
+                        <dd>bought {{ formatReleaseSeconds(mark.secondsSaved) }}s</dd>
+                      </div>
+                    }
+                    @if (earnedFeat(); as feat) {
+                      <div class="receipt-line is-feat">
+                        <dt>Feat earned</dt>
+                        <dd>{{ feat }}</dd>
+                      </div>
+                    }
+                  </dl>
+                } @else {
+                  <!-- Paired inline with its follow-up button below (mirrors the
+                     YOUR CALL stamp deck: copy left, action right) instead of
+                     stacking a whole extra row under the receipt. -->
+                  <div class="receipt-followup">
+                    <p class="receipt-near-miss">
+                      Measured finish: {{ formatReleaseSeconds(outcome.actualSeconds) }}s. The exact route is now known;
+                      make the call again.
+                    </p>
+                    <div class="receipt-actions">
+                      <button type="button" class="receipt-btn is-forward" (click)="tryAnotherRoute()">
+                        Call again
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                @if (routeChoiceAvailable()) {
+                  <section class="route-choice" aria-labelledby="route-choice-title">
+                    <header>
+                      <span>Lever earned</span>
+                      <h3 id="route-choice-title">Try the faster release approach.</h3>
+                      <p>Change the route in one action, then make a fresh call.</p>
+                    </header>
+                    <div class="route-choice-grid">
+                      @for (option of releaseRouteOptions(); track option.plan.id) {
+                        <button
+                          type="button"
+                          class="route-choice-card"
+                          [disabled]="option.durationSeconds === null || option.secondsReclaimed === null"
+                          (click)="selectReleaseRoutePlan(option.plan.id)"
+                        >
+                          <span class="route-choice-kicker">{{ option.plan.changeLabel }}</span>
+                          <strong>{{ option.plan.label }}</strong>
+                          <span class="route-choice-description">{{ option.plan.description }}</span>
+                          <span class="route-choice-effect">
+                            @if (option.secondsReclaimed === null) {
+                              Route unavailable · schedule not proven
+                            } @else if (option.secondsReclaimed > 0) {
+                              Reclaims {{ formatReleaseSeconds(option.secondsReclaimed) }}s of waiting
+                            } @else {
+                              Keeps the measured order
+                            }
+                          </span>
+                          <span class="route-choice-action">Deal this route →</span>
+                        </button>
+                      }
+                    </div>
+                  </section>
+                }
+
+                @if (canAdvanceTicket()) {
+                  @if (nextTicketBrief(); as next) {
+                    <!-- Same inline pairing as the wrong-call follow-up above:
+                       the teaser is the copy, the button is the action, one
+                       row instead of two. -->
+                    <div class="receipt-followup">
+                      <!-- Same plain-paragraph treatment as .receipt-near-miss
+                         above (was a bordered docket box on its own line;
+                         that box's padding was the tallest single element in
+                         the receipt at short-to-mid desktop heights). Dropped
+                         the explanatory second sentence ("the rule changes
+                         underneath...") sharing this row with the button
+                         wrapped it to three lines — the ticket number and
+                         rule are the facts that matter; the tour narration
+                         is redundant with what the next ticket's own brief
+                         says once you take it. -->
+                      <p class="next-ticket-teaser">
+                        <span class="teaser-kicker">Next on the desk:</span>
+                        Ticket {{ next.number }} · same route, {{ next.rule }}.
+                      </p>
+                      <div class="receipt-actions">
+                        <button type="button" class="receipt-btn is-forward" (click)="takeNextTicket()">
+                          Take changed ticket →
+                        </button>
+                      </div>
+                    </div>
+                  }
+                }
+
+                @if (shiftComplete()) {
+                  <div class="shift-closeout" role="region" aria-label="Shift ledger">
+                    <span class="closeout-kicker">Shift ledger</span>
+                    <dl class="ledger">
+                      @for (entry of shiftLedger(); track entry.ticket) {
+                        <div class="ledger-row">
+                          <dt>Ticket {{ entry.ticket }}</dt>
+                          <dd>
+                            <span class="ledger-call">Called {{ entry.call }}</span>
+                            <span class="ledger-outcome">
+                              {{ entry.verdict === 'released' ? 'Shipped' : 'Locked' }} @
+                              {{ formatReleaseSeconds(entry.actualSeconds) }}s
+                            </span>
+                            <span class="ledger-route">Signed on {{ entry.routeLabel }}</span>
+                            @if (entry.feat) {
+                              <span class="ledger-feat">Feat: {{ entry.feat }}</span>
+                            }
+                            @if (entry.secondsReclaimedOnRouteChange !== null) {
+                              <span class="ledger-reclaimed">
+                                Route change reclaimed {{ formatReleaseSeconds(entry.secondsReclaimedOnRouteChange) }}s
+                              </span>
+                            }
+                          </dd>
+                        </div>
+                      }
+                    </dl>
+                    <strong class="closeout-line">Shift signed. Two rules read, two calls made.</strong>
+                  </div>
+                }
+
+                <!-- Wrong-call and advance-ticket actions are now paired inline
+                   with their own copy above (.receipt-followup); this bottom
+                   row is only reached by the two states that have no short
+                   preceding line to pair with (shift-closeout is its own
+                   multi-row ledger, and a correct final call has nothing
+                   between .receipt-lines and this button). -->
+                @if (shiftComplete() || canCompleteShift()) {
+                  <div class="receipt-actions">
+                    @if (shiftComplete()) {
+                      <button type="button" class="receipt-btn is-forward" (click)="replayShift()">
+                        Work another shift
+                      </button>
+                    } @else if (canCompleteShift()) {
+                      <button type="button" class="receipt-btn is-forward" (click)="completeShift()">
+                        Sign off shift
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="sr-only" aria-live="polite" aria-atomic="true">{{ srAnnouncement() }}</div>
+</div>

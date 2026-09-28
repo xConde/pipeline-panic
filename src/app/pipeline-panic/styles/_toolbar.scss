@@ -1,0 +1,123 @@
+@use 'design-system' as *;
+
+.game-header-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-standard;
+  min-height: 3.25rem;
+  padding: $spacing-tight $spacing-comfortable;
+  background: var(--text-area-color);
+  border-bottom: 1px solid var(--dramatic-border-color);
+
+  // .game-header-compact sits outside .game-grid (a sibling, not a
+  // descendant), so the bay-density mixin's selector scoping can't reach it
+  // — bound directly from [class.bay-open]="prototypeWorkbenchOpen()" in the
+  // template instead. Same trim spirit as the rest of the bay-dense chrome:
+  // tighter vertical padding, same title/ticket/mute content.
+  &.bay-open {
+    padding-top: $spacing-micro;
+    padding-bottom: $spacing-micro;
+  }
+}
+
+.release-desk-brand {
+  @include text-data;
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: $spacing-tight;
+  text-transform: uppercase;
+
+  span {
+    font-size: $text-micro;
+    font-weight: $weight-bold;
+    letter-spacing: 0.14em;
+    opacity: 0.56;
+  }
+
+  strong {
+    font-size: $text-base;
+    letter-spacing: 0.08em;
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-tight;
+  flex: 0 0 auto;
+}
+
+.ticket-counter {
+  @include text-data;
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-tight;
+  min-height: $touch-target-min;
+  padding: $spacing-tight $spacing-standard;
+  border: 1px solid var(--border-color);
+  font-size: $text-micro;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  strong {
+    font-size: $text-base;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+}
+
+.mute-toggle {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: $touch-target-min;
+  height: $touch-target-min;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-base;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: border-color 150ms cubic-bezier(0.25, 1, 0.5, 1);
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    border-color: var(--dramatic-border-color);
+  }
+
+  &:focus-visible {
+    outline: 0.125rem solid var(--dramatic-border-color);
+    outline-offset: 0.125rem;
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--status-info);
+    color: var(--status-info);
+    background: var(--status-info-bg);
+  }
+}
+
+@media (max-width: $breakpoint-small) {
+  .game-header-compact {
+    min-height: $touch-target-min;
+    padding: $spacing-micro $spacing-tight;
+  }
+
+  .release-desk-brand span,
+  .ticket-counter span {
+    display: none;
+  }
+
+  .ticket-counter {
+    min-height: 2.25rem;
+    padding: $spacing-micro $spacing-tight;
+  }
+}

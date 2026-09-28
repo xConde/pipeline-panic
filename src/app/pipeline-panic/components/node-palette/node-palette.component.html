@@ -1,0 +1,128 @@
+@if (!selectedNode()) {
+  <section class="panel nodes-panel" aria-labelledby="patch-palette-title">
+    <div class="patch-palette-head">
+      <h3 class="tray-title" id="patch-palette-title">Patch shelf</h3>
+      <p class="patch-palette-copy">Place a stage. The rail reacts.</p>
+    </div>
+    <div class="node-grid">
+      @for (node of availableNodes(); track node.type) {
+        <button
+          type="button"
+          class="node-item"
+          [attr.draggable]="isNodeInteractive(node) ? 'true' : 'false'"
+          (dragstart)="onNodeDragStart($event, node)"
+          (click)="onNodeTap(node)"
+          [disabled]="!isNodeInteractive(node)"
+          [class.selected-for-placement]="node.type && node.type === selectedForPlacement()"
+          [attr.aria-pressed]="node.type && node.type === selectedForPlacement()"
+        >
+          <span class="node-icon" [style.background]="node.color">{{ node.icon }}</span>
+          <span class="node-label">{{ node.name }}</span>
+        </button>
+      }
+    </div>
+  </section>
+}
+
+@if (selectedNode()) {
+  <div class="node-detail-backdrop" (click)="closeDetail.emit()"></div>
+  @let node = selectedNode()!;
+  <section class="panel node-detail-panel" aria-labelledby="selected-stage-title">
+    <div class="panel-header">
+      <div>
+        <span class="panel-kicker">Selected stage</span>
+        <h3 class="panel-title" id="selected-stage-title">{{ node.name }}</h3>
+      </div>
+      <button type="button" class="close-btn" (click)="closeDetail.emit()" aria-label="Back to patch shelf">
+        &#10005;
+      </button>
+    </div>
+
+    <div class="detail-content">
+      <div class="stage-identity">
+        <span class="detail-icon" [style.background]="node.color">{{ node.icon }}</span>
+        <div>
+          <span class="stage-status-label">Current state</span>
+          <strong class="status-badge" [class]="'status-' + node.status">{{ node.status }}</strong>
+        </div>
+      </div>
+
+      <dl class="stage-facts">
+        <div>
+          <dt>Inputs</dt>
+          <dd>{{ node.inputs.length }}</dd>
+        </div>
+        <div>
+          <dt>Outputs</dt>
+          <dd>{{ node.outputs.length }}</dd>
+        </div>
+      </dl>
+
+      @if (node.type === 'build') {
+        <div class="detail-section">
+          <label for="build-optimization">Build pass</label>
+          <select
+            id="build-optimization"
+            class="config-select"
+            [value]="node.config.optimizationLevel || 'balanced'"
+            (change)="onOptimizationChange($event)"
+            [disabled]="isRunning() || readOnly()"
+          >
+            <option value="thorough">Thorough · full optimizer</option>
+            <option value="balanced">Balanced · usual build</option>
+            <option value="fast">Fast · skips optimizer</option>
+          </select>
+          <p class="config-hint">A faster pass buys time and stamps the artifact as unoptimized.</p>
+        </div>
+      }
+
+      @if (node.type === 'test') {
+        <div class="detail-section">
+          <label for="test-evidence">Evidence threshold</label>
+          <select
+            id="test-evidence"
+            class="config-select"
+            [value]="node.config.coverageThreshold || 75"
+            (change)="onCoverageChange($event)"
+            [disabled]="isRunning() || readOnly()"
+          >
+            @for (opt of coverageOptions; track opt) {
+              <option [value]="opt">{{ opt }}% coverage</option>
+            }
+          </select>
+          <p class="config-hint">Lower evidence shortens the check and remains visible on the receipt.</p>
+        </div>
+      }
+
+      @if (node.type === 'deploy') {
+        <div class="detail-section">
+          <label for="deploy-strategy">Dispatch strategy</label>
+          <select
+            id="deploy-strategy"
+            class="config-select"
+            [value]="node.config.strategy || 'rolling'"
+            (change)="onStrategyChange($event)"
+            [disabled]="isRunning() || readOnly()"
+          >
+            <option value="canary">Canary · smallest blast radius</option>
+            <option value="rolling">Rolling · incremental batches</option>
+            <option value="blue-green">Blue/green · instant traffic flip</option>
+          </select>
+          <p class="config-hint">Dispatch speed changes the rail; the receipt names any shortcut bought.</p>
+        </div>
+      }
+
+      <div class="detail-actions">
+        <button
+          type="button"
+          class="detail-btn danger"
+          (click)="deleteNode.emit()"
+          [disabled]="isRunning() || readOnly()"
+        >
+          <span class="btn-icon" [innerHTML]="getIcon('trash', 16)"></span>
+          <span>Remove stage</span>
+        </button>
+      </div>
+    </div>
+  </section>
+}
